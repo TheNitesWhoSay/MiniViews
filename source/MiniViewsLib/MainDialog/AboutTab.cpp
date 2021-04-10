@@ -9,7 +9,7 @@ enum class Id : int
     ButtonManual
 };
 
-bool AboutWindow::CreateThis(HWND hParent, u32 windowId)
+bool AboutWindow::CreateThis(HWND hParent, u64 windowId)
 {
     if ( getHandle() != NULL )
         return SetParent(hParent);

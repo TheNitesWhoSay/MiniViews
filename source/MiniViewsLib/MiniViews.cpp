@@ -112,7 +112,7 @@ int MiniViews::Run(int showCommand)
     if ( !mainDialog.advancedWindow.LastActionClearedSettings() )
         prefs.SetNotFirstRun();
 
-	return msg.wParam;
+	return (int)msg.wParam;
 }
 
 int MiniViews::CriticalError(int returnValue, const char* errorMessage)
@@ -282,8 +282,8 @@ void MiniViews::AddMiniView()
 	WindowsItem::SetWinLong(GWL_EXSTYLE, WindowsItem::GetWinLong(GWL_EXSTYLE)&(~WS_EX_TRANSPARENT));
 	std::shared_ptr<MiniView> newMiniView = std::shared_ptr<MiniView>(new MiniView(this));
 
-	int miniViewXc = 50 + 4 * currMiniViews.size(),
-		miniViewYc = 70 + 4 * currMiniViews.size();
+	int miniViewXc = 50 + 4 * (int)currMiniViews.size(),
+		miniViewYc = 70 + 4 * (int)currMiniViews.size();
 
 	POINT cursor = {};
 	if ( GetCursorPos(&cursor) != 0 && ScreenToClient(getHandle(), &cursor) != 0 )

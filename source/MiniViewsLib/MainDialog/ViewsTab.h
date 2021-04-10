@@ -9,7 +9,7 @@
 class ViewsWindow : public WinLib::ClassWindow
 {
 	public:
-		bool CreateThis(HWND hParent, u32 windowId);
+		bool CreateThis(HWND hParent, u64 windowId);
 		bool DestroyThis();
 		void RefreshWindow(bool rebuildTree, bool refreshNames); // refreshNames is redundant/ignored when rebuildTree is set
 		void FixPositions();

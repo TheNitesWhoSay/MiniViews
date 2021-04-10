@@ -15,7 +15,7 @@ const std::string GeneralWindow::checkEditModeTooltip("(Ctrl Shift E)");
 const std::string GeneralWindow::addMiniViewTooltip("(Ctrl Shift A)");
 const std::string GeneralWindow::opacityTooltip("(Ctrl Shift -)/(Ctrl Shift +)");
 
-bool GeneralWindow::CreateThis(HWND hParent, u32 windowId)
+bool GeneralWindow::CreateThis(HWND hParent, u64 windowId)
 {
 	if ( getHandle() != NULL )
 		return SetParent(hParent);

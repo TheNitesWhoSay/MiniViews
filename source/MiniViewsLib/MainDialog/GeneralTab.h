@@ -5,7 +5,7 @@
 class GeneralWindow : public WinLib::ClassWindow
 {
 	public:
-		bool CreateThis(HWND hParent, u32 windowId);
+		bool CreateThis(HWND hParent, u64 windowId);
 		bool DestroyThis();
 		void RefreshWindow();
 		void FixPositions();

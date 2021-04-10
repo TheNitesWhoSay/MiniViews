@@ -830,38 +830,38 @@ void DrawWrappableString(HDC hDC, std::string str, int startX, int startY, int c
 {
 	SIZE strSize = {};
 	RECT nullRect = {};
-	::GetTextExtentPoint32(hDC, &str[0], str.size(), &strSize);
+	::GetTextExtentPoint32(hDC, &str[0], (int)str.size(), &strSize);
 	s32 lineHeight = strSize.cy;
 
 	if ( strSize.cx < cliWidth )
-		::ExtTextOut(hDC, startX, startY, ETO_OPAQUE, &nullRect, &str[0], str.length(), 0);
+		::ExtTextOut(hDC, startX, startY, ETO_OPAQUE, &nullRect, &str[0], (UINT)str.length(), 0);
 	else if ( cliHeight > lineHeight ) // Can word wrap
 	{
-		u32 lastCharPos = str.size() - 1;
+		size_t lastCharPos = str.size() - 1;
 		s32 prevBottom = startY;
 
 		while ( (startY+cliHeight) - prevBottom > lineHeight && str.size() > 0 )
 		{
 			// Binary search for the character length of this line
-			u32 floor = 0;
-			u32 ceil = str.size();
+			size_t floor = 0;
+			size_t ceil = str.size();
 			while ( ceil - 1 > floor )
 			{
 				lastCharPos = (ceil - floor) / 2 + floor;
-				::GetTextExtentPoint32(hDC, &str[0], lastCharPos, &strSize);
+				::GetTextExtentPoint32(hDC, &str[0], (int)lastCharPos, &strSize);
 				if ( strSize.cx > cliWidth )
 					ceil = lastCharPos;
 				else
 					floor = lastCharPos;
 			}
-			::GetTextExtentPoint32(hDC, &str[0], floor + 1, &strSize); // Correct last character if needed
+			::GetTextExtentPoint32(hDC, &str[0], (int)floor + 1, &strSize); // Correct last character if needed
 			if ( strSize.cx > cliWidth )
 				lastCharPos = floor;
 			else
 				lastCharPos = ceil;
 			// End binary search
 
-			::ExtTextOut(hDC, startX, prevBottom, ETO_OPAQUE, &nullRect, &str[0], lastCharPos, 0);
+			::ExtTextOut(hDC, startX, prevBottom, ETO_OPAQUE, &nullRect, &str[0], (UINT)lastCharPos, 0);
 			while ( str[lastCharPos] == ' ' || str[lastCharPos] == '\t' )
 				lastCharPos++;
 			str = str.substr(lastCharPos, str.size());
