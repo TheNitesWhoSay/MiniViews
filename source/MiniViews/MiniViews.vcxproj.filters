@@ -28,7 +28,4 @@
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\MiniViewsLib\Resource.h" />
-  </ItemGroup>
 </Project>
