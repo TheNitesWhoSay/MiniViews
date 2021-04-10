@@ -1,6 +1,6 @@
 ## Project specific ignores
 
-include/
+/include/
 
 
 ## Ignore Visual Studio temporary files, build results, and
