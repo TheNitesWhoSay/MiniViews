@@ -13,7 +13,7 @@
     <ClCompile Include="MiniViewsTestMain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PlaceholderTest.cpp">
+    <ClCompile Include="VersionTest.cpp">
       <Filter>Source Files\%2a</Filter>
     </ClCompile>
   </ItemGroup>

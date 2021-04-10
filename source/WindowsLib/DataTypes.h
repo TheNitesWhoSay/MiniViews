@@ -5,14 +5,17 @@
 
 namespace WinLib {
 
-    typedef uint64_t u64;
-    typedef int64_t s64;
-    typedef uint32_t u32;
-    typedef int32_t s32;
-    typedef uint16_t u16;
-    typedef int16_t s16;
-    typedef uint8_t u8;
-    typedef int8_t s8;
+    inline namespace DataTypes {
+
+        typedef uint64_t u64;
+        typedef int64_t s64;
+        typedef uint32_t u32;
+        typedef int32_t s32;
+        typedef uint16_t u16;
+        typedef int16_t s16;
+        typedef uint8_t u8;
+        typedef int8_t s8;
+    }
 
     struct rect // Mirrors win32 RECT
     {
@@ -23,6 +26,14 @@ namespace WinLib {
     };
 
 }
+using WinLib::DataTypes::u64;
+using WinLib::DataTypes::s64;
+using WinLib::DataTypes::u32;
+using WinLib::DataTypes::s32;
+using WinLib::DataTypes::u16;
+using WinLib::DataTypes::s16;
+using WinLib::DataTypes::u8;
+using WinLib::DataTypes::s8;
 
 #ifdef output_param
 #undef output_param
