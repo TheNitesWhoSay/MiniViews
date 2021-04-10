@@ -21,9 +21,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="MiniViews.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="..\MiniViewsLib\MiniViews.ico">
       <Filter>Resource Files</Filter>
     </Image>

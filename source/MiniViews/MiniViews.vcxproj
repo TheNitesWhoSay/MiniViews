@@ -332,7 +332,6 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\MiniViewsLib\MiniViews.ico" />
-    <Image Include="MiniViews.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
