@@ -8,13 +8,13 @@ using u32 = uint32_t;
 class RegistryKey
 {
     public:
-        RegistryKey(HKEY key, const char* subKey);
+        RegistryKey(HKEY key, const std::string & subKey);
         bool KeyExists() const; // Checks whether this key exists in the registry
         bool CreateKey(); // Creates this key in the registry
         bool Clear(); // Deletes this key from the registry if it exists
 
         HKEY GetKey() const;
-        std::string GetSubKey() const;
+        const std::string & GetSubKey() const;
 
     protected:
         bool keyExists; // True if the key has been confirmed to be in the registry
@@ -28,8 +28,8 @@ class RegistryKey
 class RegistryValue
 {
     public:
-        RegistryValue(HKEY key, const char* subKey, const char* valueName);
-        RegistryValue(const RegistryKey &key, const char* valueName);
+        RegistryValue(HKEY key, const std::string & subKey, const std::string & valueName);
+        RegistryValue(const RegistryKey &key, const std::string & valueName);
         virtual bool Clear(); // Deletes the value from the registry if it exists and clears any cached data
 
     protected:
@@ -55,8 +55,8 @@ class Registryu32 : public RegistryValue
             (i.e. HKEY_CURRENT_USER, see RegCreateKeyEx for details on the key param),
             in the given subKey, with the given name, and a defaultValue that is used
             when no existing registry value can be found/retrieved */
-        Registryu32(HKEY key, const char* subKey, const char* name, bool defaultValue);
-        Registryu32(const RegistryKey &key, const char* name, u32 defaultValue);
+        Registryu32(HKEY key, const std::string & subKey, const std::string & name, bool defaultValue);
+        Registryu32(const RegistryKey &key, const std::string & name, u32 defaultValue);
 
         /** Gets the u32 that this class stores/fetches/caches,
         returns the cached value if the class has previously retrived or set
@@ -81,8 +81,8 @@ class RegistryBool : public RegistryValue
         (i.e. HKEY_CURRENT_USER, see RegCreateKeyEx for details on the key param),
         in the given subKey, with the given name, and a defaultValue that is used
         when no existing registry value can be found/retrieved */
-        RegistryBool(HKEY key, const char* subKey, const char* name, bool defaultValue);
-        RegistryBool(const RegistryKey &key, const char* name, bool defaultValue);
+        RegistryBool(HKEY key, const std::string & subKey, const std::string & name, bool defaultValue);
+        RegistryBool(const RegistryKey &key, const std::string & name, bool defaultValue);
 
         /** Gets the boolean value this class stores/fetches/caches,
         returns the cached value if the class has previously retrived or set

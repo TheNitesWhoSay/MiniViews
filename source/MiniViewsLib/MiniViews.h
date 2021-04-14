@@ -22,7 +22,7 @@ class MiniViews : public WinLib::ClassWindow, public IUpdatable, public IMiniVie
 		~MiniViews();
 
 		int Run(int showCommand); // Starts the program using the provided arguments
-		int CriticalError(int returnValue, const char* errorMessage);
+		int CriticalError(int returnValue, const std::string & errorMessage);
 
 		virtual void TimedUpdate(); // Causes UpdateMiniViews to run soon on the main thread
 		std::vector<std::shared_ptr<MiniView>> &GetMiniViewList();

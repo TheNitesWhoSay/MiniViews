@@ -113,7 +113,7 @@ class MiniView : public WinLib::ClassWindow
 		static const DWORD editModeStyles; // The styles that are applied while in edit mode
 };
 
-void DrawWrappableString(HDC hDC, std::string str, int startX, int startY, int cliWidth, int cliHeight);
+void DrawWrappableString(HDC hDC, const std::string & str, int startX, int startY, int cliWidth, int cliHeight);
 
 int RoundedQuotient(int dividend, int divisor);
 

@@ -70,7 +70,7 @@ void GeneralWindow::CreateSubWindows()
 	editOpacity.AddTooltip(opacityTooltip.c_str());
 	editOpacity.SetTextLimit(3);
 	editOpacity.SetEditNum(miniViews.GetOpacityLevel());
-	HWND hTransparencyBuddy= CreateWindowEx(NULL, UPDOWN_CLASS, NULL, WS_CHILDWINDOW | WS_VISIBLE | WS_DISABLED | UDS_SETBUDDYINT |
+	HWND hTransparencyBuddy = CreateWindowEx(NULL, UPDOWN_CLASS, NULL, WS_CHILDWINDOW | WS_VISIBLE | WS_DISABLED | UDS_SETBUDDYINT |
 		UDS_ALIGNRIGHT | UDS_ARROWKEYS | UDS_HOTTRACK, 0, 0, 0, 0, getHandle(), (HMENU)Id::EditOpacityBuddy, NULL, NULL);
 	SendMessage(hTransparencyBuddy, UDM_SETBUDDY, (WPARAM)editOpacity.getHandle(), NULL);
 	SendMessage(hTransparencyBuddy, UDM_SETRANGE32, 0, MAKELPARAM(255, 0));

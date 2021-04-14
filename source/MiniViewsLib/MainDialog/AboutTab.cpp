@@ -60,7 +60,7 @@ void AboutWindow::NotifyButtonClicked(int idFrom, HWND)
 {
     switch ( (Id)idFrom )
     {
-        case Id::ButtonWebsite: ShellExecute(NULL, "open", "https://github.com/TheNitesWhoSay/MiniViews", NULL, NULL, SW_SHOWNORMAL); break;
-        case Id::ButtonManual: ShellExecute(NULL, "open", "https://github.com/TheNitesWhoSay/MiniViews/blob/master/README.md", NULL, NULL, SW_SHOWNORMAL); break;
+        case Id::ButtonWebsite: ShellExecute(NULL, icux::toUistring("open").c_str(), icux::toUistring("https://github.com/TheNitesWhoSay/MiniViews").c_str(), NULL, NULL, SW_SHOWNORMAL); break;
+        case Id::ButtonManual: ShellExecute(NULL, icux::toUistring("open").c_str(), icux::toUistring("https://github.com/TheNitesWhoSay/MiniViews/blob/master/README.md").c_str(), NULL, NULL, SW_SHOWNORMAL); break;
     }
 }
