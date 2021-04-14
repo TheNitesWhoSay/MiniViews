@@ -1,26 +1,40 @@
 #ifndef CLI_H
 #define CLI_H
 #include <Windows.h>
+#include <iostream>
 #include <stdio.h>
 
 class CLI
 {
 	public: 
-		CLI() : console(NULL)
+		CLI() : consoleIn(NULL), consoleOut(NULL)
 		{ 
-			::AllocConsole();
-			::freopen_s(&console, "CONOUT$", "w", stdout);
-			::freopen_s(&console, "CONIN$", "r", stdin);
+			if ( ::GetConsoleWindow() == NULL )
+			{
+				if ( ::AllocConsole() != 0 )
+				{
+					if ( ::freopen_s(&consoleIn, "CONIN$", "r", stdin) == 0 )
+						std::cin.clear();
+					if ( ::freopen_s(&consoleOut, "CONOUT$", "w", stdout) == 0 )
+						std::cout.clear();
+				}
+			}
 		}
 
 		~CLI()
 		{
-			::fclose(console);
+			if ( consoleIn != NULL )
+				::fclose(consoleIn);
+
+			if ( consoleOut != NULL )
+				::fclose(consoleOut);
+
 			::FreeConsole();
 		}
 
 	private:
-		FILE* console;
+		FILE* consoleIn;
+		FILE* consoleOut;
 };
 
 #endif
