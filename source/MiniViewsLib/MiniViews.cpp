@@ -70,10 +70,10 @@ int MiniViews::Run(int showCommand)
 		return CriticalError(2, "Window creation failed.");
 
 	if ( prefs.UseNotificationIcon.Get() && !CreateNotificationIcon() )
-		MessageBox(NULL, "Failed to create notification icon.", "Error!", MB_OK);
+		WinLib::Message("Failed to create notification icon.", "Error!");
 
 	if ( !RegisterHotkeys() )
-		MessageBox(NULL, "One or more hotkeys failed to register.", "Error!", MB_OK);
+		WinLib::Message("One or more hotkeys failed to register.", "Error!");
 
 	::ShowWindow(getHandle(), showCommand);
 	WindowsItem::UpdateWindow();
@@ -112,18 +112,18 @@ int MiniViews::Run(int showCommand)
     if ( !mainDialog.advancedWindow.LastActionClearedSettings() )
         prefs.SetNotFirstRun();
 
-	return msg.wParam;
+	return (int)msg.wParam;
 }
 
-int MiniViews::CriticalError(int returnValue, const char* errorMessage)
+int MiniViews::CriticalError(int returnValue, const std::string & errorMessage)
 {
-	::MessageBox(NULL, errorMessage, "Mini Views Critical Error", MB_OK | MB_ICONEXCLAMATION);
+	WinLib::Message(errorMessage, "Mini Views Critical Error");
 	return returnValue;
 }
 
 bool MiniViews::EnsureOnlyInstance()
 {
-	HWND hOtherInstance = ::FindWindow(mainClassName.c_str(), mainWindowName.c_str());
+	HWND hOtherInstance = ::FindWindow(icux::toUistring(mainClassName).c_str(), icux::toUistring(mainWindowName).c_str());
 	if ( hOtherInstance != NULL )
 		::PostMessage(hOtherInstance, (UINT)Msg::OpenDialog, NULL, NULL);
 
@@ -282,8 +282,8 @@ void MiniViews::AddMiniView()
 	WindowsItem::SetWinLong(GWL_EXSTYLE, WindowsItem::GetWinLong(GWL_EXSTYLE)&(~WS_EX_TRANSPARENT));
 	std::shared_ptr<MiniView> newMiniView = std::shared_ptr<MiniView>(new MiniView(this));
 
-	int miniViewXc = 50 + 4 * currMiniViews.size(),
-		miniViewYc = 70 + 4 * currMiniViews.size();
+	int miniViewXc = 50 + 4 * (int)currMiniViews.size(),
+		miniViewYc = 70 + 4 * (int)currMiniViews.size();
 
 	POINT cursor = {};
 	if ( GetCursorPos(&cursor) != 0 && ScreenToClient(getHandle(), &cursor) != 0 )
@@ -330,7 +330,11 @@ bool MiniViews::CreateNotificationIcon()
     notifyIconData.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     notifyIconData.uCallbackMessage = (UINT)Msg::IconNotify;
     notifyIconData.hIcon = smallIcon;
-    std::strcpy(notifyIconData.szTip, mainWindowName.c_str());
+#ifdef UTF16_UI
+    ::wcscpy_s(notifyIconData.szTip, sizeof(notifyIconData.szTip)/sizeof(WCHAR), icux::toUistring(mainWindowName).c_str());
+#else
+	std::strcpy(notifyIconData.szTip, icux::toUistring(mainWindowName).c_str());
+#endif
     notifyIconData.hBalloonIcon = smallIcon;
     return ::Shell_NotifyIcon(NIM_ADD, &notifyIconData) == TRUE;
 }
@@ -353,7 +357,7 @@ bool MiniViews::CreateThis()
 	{
 		if ( !updater.StartTimedUpdates(msPerFrame) )
 		{
-			::MessageBox(NULL, "Critical Error!", "Could not open graphic updater thread.", MB_OK|MB_ICONEXCLAMATION);
+			WinLib::Message("Could not open graphic updater thread.", "Critical Error!");
 			::PostQuitMessage(0);
 		}
 		WindowsItem::SetWinLong(GWL_STYLE, 0);
@@ -450,21 +454,21 @@ void MiniViews::RunNotificationContextMenu()
 {
 	HMENU hMenu = ::CreatePopupMenu();
 	UINT flags = MF_BYPOSITION | MF_ENABLED | MF_STRING | (editMode ? MF_CHECKED : MF_UNCHECKED);
-	::InsertMenu(hMenu, (UINT)-1, flags, (UINT_PTR)Id::ToggleEditMode, "Edit Mode\t(Ctrl Shift E)");
-	::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_SEPARATOR, 0, "");
+	::InsertMenu(hMenu, (UINT)-1, flags, (UINT_PTR)Id::ToggleEditMode, icux::toUistring("Edit Mode\t(Ctrl Shift E)").c_str());
+	::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_SEPARATOR, 0, icux::uistring().c_str());
 
-	::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_ENABLED | MF_STRING, (UINT_PTR)Id::AddMiniView, "Add Mini View\t(Ctrl Shift A)");
+	::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_ENABLED | MF_STRING, (UINT_PTR)Id::AddMiniView, icux::toUistring("Add Mini View\t(Ctrl Shift A)").c_str());
 	flags = MF_BYPOSITION | MF_ENABLED | MF_STRING | (currMiniViews.size() > 0 ? MF_ENABLED : MF_DISABLED);
-	::InsertMenu(hMenu, (UINT)-1, flags, (UINT_PTR)Id::ClearMiniViews, "Clear Mini Views");
-	::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_SEPARATOR, 0, "");
+	::InsertMenu(hMenu, (UINT)-1, flags, (UINT_PTR)Id::ClearMiniViews, icux::toUistring("Clear Mini Views").c_str());
+	::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_SEPARATOR, 0, icux::uistring().c_str());
 
 	flags = MF_BYPOSITION | MF_STRING | (isTransparencyMax() ? MF_DISABLED : MF_ENABLED);
-	::InsertMenu(hMenu, (UINT)-1, flags, (UINT_PTR)Id::IncreaseOpacity, "Increase Opacity\t(Ctrl Shift +)");
+	::InsertMenu(hMenu, (UINT)-1, flags, (UINT_PTR)Id::IncreaseOpacity, icux::toUistring("Increase Opacity\t(Ctrl Shift +)").c_str());
 	flags = MF_BYPOSITION | MF_STRING | (isTransparencyMinimum() ? MF_DISABLED : MF_ENABLED);
-	::InsertMenu(hMenu, (UINT)-1, flags, (UINT_PTR)Id::DecreaseOpacity, "Decrease Opacity\t(Ctrl Shift -)");
-	::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_SEPARATOR, 0, "");
+	::InsertMenu(hMenu, (UINT)-1, flags, (UINT_PTR)Id::DecreaseOpacity, icux::toUistring("Decrease Opacity\t(Ctrl Shift -)").c_str());
+	::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_SEPARATOR, 0, icux::uistring().c_str());
 
-	::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_ENABLED | MF_STRING, (UINT_PTR)Id::ExitApplication, "Exit");
+	::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_ENABLED | MF_STRING, (UINT_PTR)Id::ExitApplication, icux::toUistring("Exit").c_str());
 
 	POINT pt = {};
 	::GetCursorPos(&pt);
@@ -525,10 +529,10 @@ void RefreshNotificationIconArea()
 {
 	RECT rcNotify = {};
 	HWND hPromotedNotifyArea = ::FindWindowEx(::FindWindowEx(::FindWindowEx(::FindWindowEx(NULL,
-		NULL, "Shell_TrayWnd", ""),
-		NULL, "TrayNotifyWnd", ""),
-		NULL, "SysPager", ""),
-		NULL, "ToolbarWindow32", "User Promoted Notification Area");
+		NULL, icux::toUistring("Shell_TrayWnd").c_str(), icux::uistring().c_str()),
+		NULL, icux::toUistring("TrayNotifyWnd").c_str(), icux::uistring().c_str()),
+		NULL, icux::toUistring("SysPager").c_str(), icux::uistring().c_str()),
+		NULL, icux::toUistring("ToolbarWindow32").c_str(), icux::toUistring("User Promoted Notification Area").c_str());
 
 	::GetClientRect(hPromotedNotifyArea, &rcNotify);
 	for ( int x = 0; x < rcNotify.right; x += 5 )
@@ -538,8 +542,8 @@ void RefreshNotificationIconArea()
 	}
 
 	HWND hHiddenNotifyArea = ::FindWindowEx(::FindWindowEx(NULL,
-		NULL, "NotifyIconOverflowWindow", ""),
-		NULL, "ToolbarWindow32", "Overflow Notification Area");
+		NULL, icux::toUistring("NotifyIconOverflowWindow").c_str(), icux::uistring().c_str()),
+		NULL, icux::toUistring("ToolbarWindow32").c_str(), icux::toUistring("Overflow Notification Area").c_str());
 
 	::GetClientRect(hHiddenNotifyArea, &rcNotify);
 	for ( int x = 0; x < rcNotify.right; x += 5 )

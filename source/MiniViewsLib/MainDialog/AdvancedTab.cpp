@@ -22,7 +22,7 @@ AdvancedWindow::AdvancedWindow() : blockEditNotify(true), lastActionClearedSetti
 
 }
 
-bool AdvancedWindow::CreateThis(HWND hParent, u32 windowId)
+bool AdvancedWindow::CreateThis(HWND hParent, u64 windowId)
 {
 	if ( getHandle() != NULL )
 		return SetParent(hParent);
@@ -153,10 +153,8 @@ void AdvancedWindow::NotifyButtonClicked(int idFrom, HWND)
 	{
         lastActionClearedSettings = (Id)idFrom == Id::ButtonClearSavedSettings;
 		if ( !success )
-		{
-			MessageBox(NULL, std::string("Failed to update settings: " + std::to_string(GetLastError())).c_str(),
-				"Error!", MB_OK | MB_ICONEXCLAMATION);
-		}
+            WinLib::Message("Failed to update settings: " + std::to_string(GetLastError()), "Error!");
+
 		RefreshWindow();
 	}
 }

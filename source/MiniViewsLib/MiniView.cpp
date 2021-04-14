@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <ShellScalingApi.h>
+#include <optional>
 
 enum class Id : int
 {
@@ -639,6 +640,21 @@ void MiniView::SetMinMaxSize(MINMAXINFO &minMaxInfo)
 	}
 }
 
+std::optional<std::string> getWindowText(HWND hWindow)
+{
+	int titleLength = ::GetWindowTextLength(hWindow) + 1;
+	if ( titleLength > 1 )
+	{
+		std::unique_ptr<icux::codepoint> titleText(new icux::codepoint[titleLength]);
+		if ( ::GetWindowText(hWindow, titleText.get(), titleLength) )
+		{
+			titleText.get()[titleLength - 1] = '\0';
+			return icux::toUtf8(icux::uistring(titleText.get(), size_t(titleLength)-1));
+		}
+	}
+	return {};
+}
+
 void MiniView::WindowDropped()
 {
 	POINT pt = {};
@@ -652,11 +668,11 @@ void MiniView::WindowDropped()
         lastUserSetCliHeight = WindowsItem::cliHeight();
         settingWindow = false;
 
-        char sourceWindowName[MAX_PATH] = {};
-        if ( ::GetWindowText(hSource, sourceWindowName, MAX_PATH) > 0 )
-            ::SetWindowText(getHandle(), std::string("Mini View - [" + std::string(sourceWindowName) + "]").c_str());
+		auto sourceWindowName = getWindowText(hSource);
+		if ( auto sourceWindowName = getWindowText(hSource) )
+			SetWinText("Mini View - [" + (*sourceWindowName) + "]");
         else
-            ::SetWindowText(getHandle(), "Mini View (Unknown)");
+			SetWinText("Mini View (Unknown)");
 
         WindowsItem::Show();
 
@@ -726,20 +742,20 @@ void MiniView::RunContextMenu()
 	if ( !settingWindow )
 	{
 		flags = MF_BYPOSITION | MF_ENABLED | MF_STRING | (lockRatio ? MF_CHECKED : MF_UNCHECKED);
-		::InsertMenu(hMenu, (UINT)-1, flags, (UINT_PTR)Id::LockRatio, "Lock Size Ratio");
+		::InsertMenu(hMenu, (UINT)-1, flags, (UINT_PTR)Id::LockRatio, icux::toUistring("Lock Size Ratio").c_str());
 		flags = MF_BYPOSITION | MF_ENABLED | MF_STRING | (hideWhenSourceOnTop ? MF_CHECKED : MF_UNCHECKED);
-		::InsertMenu(hMenu, (UINT)-1, flags, (UINT_PTR)Id::HideWhenSourceOnTop, "Hide When Source Is Top");
-		::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_SEPARATOR, 0, "");
-		::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_ENABLED | MF_STRING, (UINT_PTR)Id::MatchSource, "Match Source");
-		::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_SEPARATOR, 0, "");
+		::InsertMenu(hMenu, (UINT)-1, flags, (UINT_PTR)Id::HideWhenSourceOnTop, icux::toUistring("Hide When Source Is Top").c_str());
+		::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_SEPARATOR, 0, icux::uistring().c_str());
+		::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_ENABLED | MF_STRING, (UINT_PTR)Id::MatchSource, icux::toUistring("Match Source").c_str());
+		::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_SEPARATOR, 0, icux::uistring().c_str());
 		flags = MF_BYPOSITION | MF_STRING | (clipped ? MF_ENABLED : MF_DISABLED);
-		::InsertMenu(hMenu, (UINT)-1, flags, (UINT_PTR)Id::ClearClipRegion, "Clear Clip Region");
-		::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_ENABLED | MF_STRING, (UINT_PTR)Id::SetClipRegion, "Set Clip Region");
-		::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_SEPARATOR, 0, "");
-		//::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_ENABLED | MF_STRING, (UINT_PTR)Id::Hide, "Hide");
+		::InsertMenu(hMenu, (UINT)-1, flags, (UINT_PTR)Id::ClearClipRegion, icux::toUistring("Clear Clip Region").c_str());
+		::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_ENABLED | MF_STRING, (UINT_PTR)Id::SetClipRegion, icux::toUistring("Set Clip Region").c_str());
+		::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_SEPARATOR, 0, icux::uistring().c_str());
+		//::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_ENABLED | MF_STRING, (UINT_PTR)Id::Hide, icux::toUistring("Hide").c_str());
 	}
-	::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_ENABLED | MF_STRING, (UINT_PTR)Id::Close, "Close");
-	//::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_ENABLED | MF_STRING, (UINT_PTR)Id::Properties, "Properties");
+	::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_ENABLED | MF_STRING, (UINT_PTR)Id::Close, icux::toUistring("Close").c_str());
+	//::InsertMenu(hMenu, (UINT)-1, MF_BYPOSITION | MF_ENABLED | MF_STRING, (UINT_PTR)Id::Properties, icux::toUistring("Properties").c_str());
 
 	POINT pt = {};
 	::GetCursorPos(&pt);
@@ -781,12 +797,12 @@ void MiniView::ProcessCloseMessage()
 
 void MiniView::HideCommand()
 {
-	MessageBox(NULL, "Unimplemented: Hide MiniView", "Message", MB_OK);
+	WinLib::Message("Unimplemented: Hide MiniView");
 }
 
 void MiniView::OpenProperties()
 {
-	MessageBox(NULL, "Unimplemented: Open MiniView Properties", "Message", MB_OK);
+	WinLib::Message("Unimplemented: Open MiniView Properties");
 }
 
 int MiniView::EraseBackground()
@@ -826,44 +842,46 @@ LRESULT MiniView::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-void DrawWrappableString(HDC hDC, std::string str, int startX, int startY, int cliWidth, int cliHeight)
+void DrawWrappableString(HDC hDC, const std::string & utf8Str, int startX, int startY, int cliWidth, int cliHeight)
 {
+	icux::uistring str = icux::toUistring(utf8Str);
+
 	SIZE strSize = {};
 	RECT nullRect = {};
-	::GetTextExtentPoint32(hDC, &str[0], str.size(), &strSize);
+	::GetTextExtentPoint32(hDC, &str[0], (int)str.size(), &strSize);
 	s32 lineHeight = strSize.cy;
 
 	if ( strSize.cx < cliWidth )
-		::ExtTextOut(hDC, startX, startY, ETO_OPAQUE, &nullRect, &str[0], str.length(), 0);
+		::ExtTextOut(hDC, startX, startY, ETO_OPAQUE, &nullRect, &str[0], (UINT)str.length(), 0);
 	else if ( cliHeight > lineHeight ) // Can word wrap
 	{
-		u32 lastCharPos = str.size() - 1;
+		size_t lastCharPos = str.size() - 1;
 		s32 prevBottom = startY;
 
 		while ( (startY+cliHeight) - prevBottom > lineHeight && str.size() > 0 )
 		{
 			// Binary search for the character length of this line
-			u32 floor = 0;
-			u32 ceil = str.size();
+			size_t floor = 0;
+			size_t ceil = str.size();
 			while ( ceil - 1 > floor )
 			{
 				lastCharPos = (ceil - floor) / 2 + floor;
-				::GetTextExtentPoint32(hDC, &str[0], lastCharPos, &strSize);
+				::GetTextExtentPoint32(hDC, &str[0], (int)lastCharPos, &strSize);
 				if ( strSize.cx > cliWidth )
 					ceil = lastCharPos;
 				else
 					floor = lastCharPos;
 			}
-			::GetTextExtentPoint32(hDC, &str[0], floor + 1, &strSize); // Correct last character if needed
+			::GetTextExtentPoint32(hDC, &str[0], (int)floor + 1, &strSize); // Correct last character if needed
 			if ( strSize.cx > cliWidth )
 				lastCharPos = floor;
 			else
 				lastCharPos = ceil;
 			// End binary search
 
-			::ExtTextOut(hDC, startX, prevBottom, ETO_OPAQUE, &nullRect, &str[0], lastCharPos, 0);
-			while ( str[lastCharPos] == ' ' || str[lastCharPos] == '\t' )
-				lastCharPos++;
+			::ExtTextOut(hDC, startX, prevBottom, ETO_OPAQUE, &nullRect, &str[0], (UINT)lastCharPos, 0);
+			//while ( str[lastCharPos] == ' ' || str[lastCharPos] == '\t' )
+			//	lastCharPos++;
 			str = str.substr(lastCharPos, str.size());
 			prevBottom += lineHeight;
 		}

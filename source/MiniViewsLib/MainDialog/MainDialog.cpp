@@ -15,7 +15,7 @@ enum class Id : int
 MainDialog::MainDialog() : windowLeft(0), windowTop(0), selectedTab(TabId::GeneralTab), defaultFont(NULL), smallIcon(NULL),
 	mediumIcon(NULL)
 {
-	defaultFont = ::CreateFont(14, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Microsoft Sans Serif");
+	defaultFont = ::CreateFont(14, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, icux::toUistring("Microsoft Sans Serif").c_str());
 	smallIcon = (HICON)::LoadImage(::GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MINIVIEWSICON), IMAGE_ICON, 16, 16, 0);
 	mediumIcon = (HICON)::LoadImage(::GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MINIVIEWSICON), IMAGE_ICON, 32, 32, 0);
 }
@@ -112,7 +112,7 @@ void MainDialog::ProcessClose()
 {
 	if ( miniViews.prefs.ConfirmExit.Get() )
 	{
-		if ( ::MessageBox(getHandle(), "Would you like to exit Mini Views?", "Confirm Exit", MB_YESNO) == IDYES )
+		if ( WinLib::GetYesNo("Would you like to exit Mini Views?", "Confirm Exit") == WinLib::PromptResult::Yes )
 			::PostQuitMessage(0);
 	}
 	else
@@ -127,9 +127,9 @@ void MainDialog::CreateSubWindows()
 
     tabs.CreateThis(getHandle(), 0, 0, 263, 426, (u32)Id::MainDialogTabs);
     //tabs.FindThis(getHandle(), IDC_MAINDIALOGTABS);
-    const char* tabLabels[] = { "General", "Views", "Advanced", "About" };
-    for ( int i = 0; i < sizeof(tabLabels) / sizeof(const char*); i++ )
-        tabs.InsertTab(i, tabLabels[i]);
+	std::vector<std::string> tabLabels = { "General", "Views", "Advanced", "About" };
+    for ( size_t i = 0; i < tabLabels.size(); i++ )
+        tabs.InsertTab((u32)i, tabLabels[i]);
 
 	generalWindow.CreateThis(tabs.getHandle(), (u32)Id::GeneralWindow);
 	viewsWindow.CreateThis(tabs.getHandle(), (u32)Id::ViewsWindow);
