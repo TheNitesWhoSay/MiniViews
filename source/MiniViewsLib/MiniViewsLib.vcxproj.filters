@@ -59,6 +59,9 @@
     <ClCompile Include="Version.cpp">
       <Filter>Source Files\%2a</Filter>
     </ClCompile>
+    <ClCompile Include="Zerocmp.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainDialog\AboutTab.h">
@@ -101,6 +104,9 @@
       <Filter>Header Files\%2a</Filter>
     </ClInclude>
     <ClInclude Include="Resource.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Zerocmp.h">
       <Filter>Header Files\%2a</Filter>
     </ClInclude>
   </ItemGroup>

@@ -321,6 +321,7 @@
     <ClCompile Include="RegistryTypes.cpp" />
     <ClCompile Include="Updater.cpp" />
     <ClCompile Include="Version.cpp" />
+    <ClCompile Include="Zerocmp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CLI.h" />
@@ -337,6 +338,7 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Updater.h" />
     <ClInclude Include="Version.h" />
+    <ClInclude Include="Zerocmp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
