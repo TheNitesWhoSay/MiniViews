@@ -32,6 +32,11 @@ class AdvancedWindow : public WinLib::ClassWindow
 		WinLib::CheckBoxControl checkDefaultLockSizeRatio;
 		WinLib::CheckBoxControl checkDefaultHideWhenSourceOnTop;
 
+		WinLib::GroupBoxControl groupFrozenSourceBehaviorDefaults;
+		WinLib::CheckBoxControl checkUseCachedImageWhenFrozen;
+		WinLib::CheckBoxControl checkShowFrozenIndicatorIcon;
+		WinLib::CheckBoxControl checkShowFrozenContextMenuItem;
+
 		WinLib::ButtonControl buttonClearSavedSettings;
 };
 

@@ -14,7 +14,10 @@ enum class Id : int
     CheckDefaultMatchSourceSize,
     CheckDefaultLockSizeRatio,
     CheckDefaultHideWhenSourceOnTop,
-	ButtonClearSavedSettings,
+    CheckUseCachedImageWhenFrozen,
+    CheckShowFrozenIndicatorIcon,
+    CheckShowFrozenContextMenuItem,
+	ButtonClearSavedSettings
 };
 
 AdvancedWindow::AdvancedWindow() : blockEditNotify(true), lastActionClearedSettings(false)
@@ -73,6 +76,9 @@ void AdvancedWindow::RefreshWindow()
     checkDefaultMatchSourceSize.SetCheck(miniViews.prefs.DefaultMatchSourceSize.Get());
     checkDefaultLockSizeRatio.SetCheck(miniViews.prefs.DefaultLockSizeRatio.Get());
     checkDefaultHideWhenSourceOnTop.SetCheck(miniViews.prefs.DefaultHideWhenSourceOnTop.Get());
+    checkUseCachedImageWhenFrozen.SetCheck(miniViews.prefs.UseCachedImageWhenFrozen.Get());
+    checkShowFrozenIndicatorIcon.SetCheck(miniViews.prefs.ShowFrozenIndicatorIcon.Get());
+    checkShowFrozenContextMenuItem.SetCheck(miniViews.prefs.ShowFrozenContextMenuItem.Get());
     blockEditNotify = false;
 }
 
@@ -108,13 +114,18 @@ void AdvancedWindow::CreateSubWindows()
     SendMessage(hTransparencyBuddy, UDM_SETRANGE32, 0, MAKELPARAM(255, 0));
     EnableWindow(hTransparencyBuddy, TRUE);
 
-    groupViewDefaults.CreateThis(getHandle(), 0, editDefaultOpacity.Bottom()+30, 250, 179, "Mini View Defaults", 0);
+    groupViewDefaults.CreateThis(getHandle(), 0, editDefaultOpacity.Bottom()+10, 250, 120, "Mini View Defaults", 0);
     checkDefaultMatchSourcePosition.CreateThis(getHandle(), groupViewDefaults.Left() + 10, groupViewDefaults.Top() + 20, 200, 23, false, "Match Source Position by Default", (u32)Id::CheckDefaultMatchSourcePosition);
     checkDefaultMatchSourceSize.CreateThis(getHandle(), groupViewDefaults.Left() + 10, checkDefaultMatchSourcePosition.Bottom() + 2, 200, 23, false, "Match Source Size by Default", (u32)Id::CheckDefaultMatchSourceSize);
     checkDefaultLockSizeRatio.CreateThis(getHandle(), groupViewDefaults.Left() + 10, checkDefaultMatchSourceSize.Bottom() + 2, 200, 23, true, "Lock Size Ratio by Default", (u32)Id::CheckDefaultLockSizeRatio);
     checkDefaultHideWhenSourceOnTop.CreateThis(getHandle(), groupViewDefaults.Left() + 10, checkDefaultLockSizeRatio.Bottom() + 2, 200, 23, true, "Hide When Source on Top by Default", (u32)Id::CheckDefaultHideWhenSourceOnTop);
 
-    buttonClearSavedSettings.CreateThis(getHandle(), 0, groupViewDefaults.Bottom() + 30, 125, 23, "Clear Saved Settings", (u32)Id::ButtonClearSavedSettings);
+    groupFrozenSourceBehaviorDefaults.CreateThis(getHandle(), 0, groupViewDefaults.Bottom()+10, 250, 95, "Frozen Source Behavior", 0);
+    checkUseCachedImageWhenFrozen.CreateThis(getHandle(), groupFrozenSourceBehaviorDefaults.Left() + 10, groupFrozenSourceBehaviorDefaults.Top() + 20, 200, 23, true, "Use Cached Image When Frozen", (u32)Id::CheckUseCachedImageWhenFrozen);
+    checkShowFrozenIndicatorIcon.CreateThis(getHandle(), groupFrozenSourceBehaviorDefaults.Left() + 10, checkUseCachedImageWhenFrozen.Bottom() + 2, 200, 23, true, "Show Frozen Indicator Icon", (u32)Id::CheckShowFrozenIndicatorIcon);
+    checkShowFrozenContextMenuItem.CreateThis(getHandle(), groupFrozenSourceBehaviorDefaults.Left() + 10, checkShowFrozenIndicatorIcon.Bottom() + 2, 200, 23, true, "Show Frozen Context Menu Item", (u32)Id::CheckShowFrozenContextMenuItem);
+
+    buttonClearSavedSettings.CreateThis(getHandle(), 0, groupFrozenSourceBehaviorDefaults.Bottom() + 8, 125, 23, "Clear Saved Settings", (u32)Id::ButtonClearSavedSettings);
 }
 
 bool ToggleUseNotificationIcon()
@@ -145,6 +156,9 @@ void AdvancedWindow::NotifyButtonClicked(int idFrom, HWND)
         case Id::CheckDefaultMatchSourceSize: success = miniViews.prefs.DefaultMatchSourceSize.Toggle(); break;
         case Id::CheckDefaultLockSizeRatio: success = miniViews.prefs.DefaultLockSizeRatio.Toggle(); break;
         case Id::CheckDefaultHideWhenSourceOnTop: success = miniViews.prefs.DefaultHideWhenSourceOnTop.Toggle(); break;
+        case Id::CheckUseCachedImageWhenFrozen: success = miniViews.prefs.UseCachedImageWhenFrozen.Toggle(); break;
+        case Id::CheckShowFrozenIndicatorIcon: success = miniViews.prefs.ShowFrozenIndicatorIcon.Toggle(); break;
+        case Id::CheckShowFrozenContextMenuItem: success = miniViews.prefs.ShowFrozenContextMenuItem.Toggle(); break;
         case Id::ButtonClearSavedSettings: success = miniViews.prefs.ClearSavedPreferences(); break;
 		default: performedCommand = false; break;
 	}

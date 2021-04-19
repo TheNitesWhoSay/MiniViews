@@ -4,6 +4,48 @@
 
 class MiniView;
 
+class WinImage
+{
+public:
+	virtual ~WinImage();
+
+	LONG getWidth() const;
+	LONG getHeight() const;
+
+	virtual bool isValid() = 0;
+
+protected:
+	void setDimensions(LONG width, LONG height);
+
+private:
+	LONG width = 0;
+	LONG height = 0;
+};
+
+class WinGdiImage : public WinImage
+{
+public:
+	WinGdiImage(WinLib::WindowsItem & windowsItem);
+	WinGdiImage(HWND hSource);
+	virtual ~WinGdiImage();
+
+	bool isValid() override;
+	void stretchBlt(HDC hdcDest, int xDest, int yDest, int wDest, int hDest,
+		int xSrc, int ySrc, int wSrc, int hSrc, DWORD rop);
+
+private:
+	void SetImage(HDC sourceDc, LONG width, LONG height);
+	void SetBmi();
+
+	HDC hMemDc;
+	BITMAPINFO bitmapInfo;
+	HBITMAP bitmap;
+
+	WinGdiImage() = delete;
+};
+
+class WindowsCaptureImage;
+
 class IMiniViewUser
 {
 	public:
@@ -13,7 +55,10 @@ class IMiniViewUser
         virtual bool GetDefaultMatchSourcePosition(MiniView &miniView) = 0;
         virtual bool GetDefaultMatchSourceSize(MiniView &miniView) = 0;
         virtual bool GetDefaultLockSizeRatio(MiniView &miniView) = 0;
-        virtual bool GetDefaultHideWhenSourceOnTop(MiniView &miniView) = 0;
+		virtual bool GetDefaultHideWhenSourceOnTop(MiniView &miniView) = 0;
+		virtual bool GetUseCachedImageWhenFrozen(MiniView &miniView) = 0;
+		virtual bool GetShowFrozenIndicatorIcon(MiniView &miniView) = 0;
+		virtual bool GetShowFrozenContextMenuItem(MiniView &miniView) = 0;
 };
 
 class MiniView : public WinLib::ClassWindow
@@ -23,6 +68,7 @@ class MiniView : public WinLib::ClassWindow
 		MiniView(IMiniViewUser* user);
 		bool CreateThis(HWND hParent, HWND hSource, int xc, int yc);
 		void DestroyThis();
+		static void ClearStaticCache();
 		HWND GetSourceWindow();
 
 		bool IsClipped();
@@ -40,8 +86,11 @@ class MiniView : public WinLib::ClassWindow
 		void AdjustCliWidth(int newCliWidth);
 		void AdjustCliHeight(int newCliHeight);
 
+		void FrozenInfo();
 		void SetEditMode(bool editMode);
 		void ValidateProperties();
+		void ValidateImage();
+		void RunHalfSecondActions();
 		void RunFrame();
 		void ShowByParentRequest();
 		void HideByParentRequest();
@@ -71,7 +120,6 @@ class MiniView : public WinLib::ClassWindow
 		void WindowDropped();
 		bool IsSourceOnTop();
 		void CheckHideBySourceOnTop();
-		BITMAPINFO GetBmi(s32 width, s32 height);
 		void RunContextMenu();
 		void PostCloseMessage();
 		void ProcessCloseMessage();
@@ -96,6 +144,9 @@ class MiniView : public WinLib::ClassWindow
 		bool hideWhenSourceOnTop;
 		bool hiddenBySourceOnTop;
 		bool hiddenByParent;
+		bool isGdiCompatible;
+		bool isGraphicsCaptureCompatible;
+		bool isFrozen;
 
 		bool lockRatio; // Determines whether the size ratio of the MiniView to the source should be maintained
         int lastUserSetCliWidth, lastUserSetCliHeight,
@@ -107,10 +158,23 @@ class MiniView : public WinLib::ClassWindow
         RECT rcInternalClip; // The internal area of a mini-view to which the source window is being copied
 		HBRUSH whiteBrush;
 		IMiniViewUser* user;
+		std::unique_ptr<WinGdiImage> winGdiImageCache;
 
 		static const int minimumDimension; // The minimum width and height of the MiniView
 		static const DWORD constantStyles; // Styles always applied to the window
 		static const DWORD editModeStyles; // The styles that are applied while in edit mode
+		static HICON frozenIcon;
+};
+
+class WindowsCaptureImage : public WinImage
+{
+public:
+	virtual ~WindowsCaptureImage();
+
+	bool isValid() override;
+
+private:
+	WindowsCaptureImage() = delete;
 };
 
 void DrawWrappableString(HDC hDC, const std::string & str, int startX, int startY, int cliWidth, int cliHeight);

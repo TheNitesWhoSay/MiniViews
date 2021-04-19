@@ -2,14 +2,15 @@
 #include "Resource.h"
 #include "Preferences.h"
 #include <cstdlib>
-#include <iostream>
 #include <ShellScalingApi.h>
 #include <optional>
+#include "Zerocmp.h"
 
 enum class Id : int
 {
 	ClearClipRegion = ID_FIRST,
 	SetClipRegion,
+	Frozen,
 	LockRatio,
 	MatchSource,
 	HideWhenSourceOnTop,
@@ -24,9 +25,12 @@ const DWORD MiniView::constantStyles(WS_CHILD|WS_VISIBLE|WS_CLIPSIBLINGS);
 
 const DWORD MiniView::editModeStyles(WS_THICKFRAME|WS_CAPTION|WS_SYSMENU);
 
+HICON MiniView::frozenIcon(NULL);
+
 MiniView::MiniView(IMiniViewUser* user) : hSource(NULL), settingWindow(true), editMode(true),
     hideWhenSourceOnTop(user->GetDefaultHideWhenSourceOnTop(*this)),
 	hiddenBySourceOnTop(true), hiddenByParent(false),
+	isGdiCompatible(false), isGraphicsCaptureCompatible(false), isFrozen(false),
     lockRatio(user->GetDefaultLockSizeRatio(*this)),
 	lastUserSetCliWidth(0), lastUserSetCliHeight(0),
     //lastFixedCliWidth(0), lastFixedCliHeight(0),
@@ -47,6 +51,9 @@ MiniView::MiniView(IMiniViewUser* user) : hSource(NULL), settingWindow(true), ed
 
 bool MiniView::CreateThis(HWND hParent, HWND sourceHandle, int xc, int yc)
 {
+	if ( MiniView::frozenIcon == NULL )
+		MiniView::frozenIcon = (HICON)LoadImage(GetModuleHandle(0), MAKEINTRESOURCE(IDI_FROZEN), IMAGE_ICON, 0, 0, LR_LOADTRANSPARENT);
+
 	hSource = sourceHandle;
 	HICON hIcon = (HICON)::LoadImage(::GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MINIVIEWSICON), IMAGE_ICON, 32, 32, 0);
 	HICON hIconSmall = (HICON)::LoadImage(::GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MINIVIEWSICON), IMAGE_ICON, 16, 16, 0);
@@ -71,6 +78,12 @@ bool MiniView::CreateThis(HWND hParent, HWND sourceHandle, int xc, int yc)
 void MiniView::DestroyThis()
 {
 	ClassWindow::DestroyThis();
+}
+
+void MiniView::ClearStaticCache()
+{
+	if ( MiniView::frozenIcon != NULL )
+		DestroyIcon(MiniView::frozenIcon);
 }
 
 HWND MiniView::GetSourceWindow()
@@ -244,6 +257,15 @@ void MiniView::AdjustCliHeight(int newCliHeight)
 	WindowsItem::SetSize(newCliWidth+borderWidth, newCliHeight+borderHeight);
 }
 
+void MiniView::FrozenInfo()
+{
+	WinLib::Message(std::string("Your source window has stopped rendering itself!\n\n") +
+		"MiniViews is showing a cached image and the frozen indicator.\n\n" +
+		"You may be able to prevent your source window from freezing via a setting in your source application," +
+		"e.g. if your source window is chrome, disable chrome://flags/#calculate-native-win-occlusion\n\n" +
+		"You can adjust MiniViews' behavior for frozen sources in the Advanced tab.");
+}
+
 void MiniView::SetEditMode(bool newStatus)
 {
 	editMode = newStatus;
@@ -277,6 +299,61 @@ void MiniView::ValidateProperties()
 		CheckHideBySourceOnTop();
 		FixRatio();
 	}
+}
+
+void MiniView::ValidateImage()
+{
+	// TODO: new flags: isGdiCompatible, isGraphicsCaptureCompatible, isFrozen, start all as false
+	// TODO: when you start up a MiniView and every half second while (!isGdiCompatible && !isGraphicsCaptureCompatible)...
+	//	try to pull an image via GDI, if you succeed, set isGdiCompatible to true, if you fail, try to pull an image via Windows Graphics Capture, if you succeed, set isGraphicsCaptureCompatible to true
+	//  once one of these is set, you stop automatically checking
+	// TODO: every half second, if isGdiCompatible or isGraphicsCaptureCompatible are already set and isFrozen is not set, grab the image currently on the MiniView...
+	//	if it's valid, cache it as "lastValidImage"...
+	//	if it's invalid, set isFrozen flag to true, activate freeze icon (w/ tooltip when in edit mode) and set the cached image as the display
+	//  if isFrozen was already set, instead check the source for a new valid image, if you have one, unfreeze the MiniView
+
+	if ( !this->isGdiCompatible && !this->isGraphicsCaptureCompatible ) // Check for compatible image...
+	{
+		WinGdiImage winGdiImage(hSource);
+		if ( winGdiImage.isValid() )
+		{
+			this->isGdiCompatible = true;
+			this->isFrozen = false;
+		}
+		// TODO: Check graphics capture compatibility
+	}
+	else if ( isFrozen ) // Check for unfreeze opportunity...
+	{
+		if ( this->isGdiCompatible )
+		{
+			WinGdiImage winGdiImage(hSource);
+			if ( winGdiImage.isValid() )
+				this->isFrozen = false;
+		}
+		else if ( this->isGraphicsCaptureCompatible )
+		{
+			// TODO: Check for graphics capture unfreeze opportunity
+		}
+	}
+	else if ( this->isGdiCompatible ) // Cache current image if valid
+	{
+		auto winGdiImage = std::make_unique<WinGdiImage>(hSource);
+		if ( winGdiImage->isValid() )
+			this->winGdiImageCache.swap(winGdiImage);
+		else
+			this->isFrozen = true;
+	}
+	else if ( this->isGraphicsCaptureCompatible ) // Cache current image if valid
+	{
+		// TODO: Implement me
+	}
+}
+
+void MiniView::RunHalfSecondActions()
+{
+	ValidateProperties();
+	if ( !settingWindow )
+		ValidateImage();
 }
 
 void MiniView::RunFrame()
@@ -384,7 +461,7 @@ void MiniView::PaintInstructions()
 void MiniView::PaintMiniView()
 {
 	HDC sourceDc = ::GetDC(hSource);
-	HDC miniViewDc = internallyClipped ? WindowsItem::StartBufferedPaint() : WindowsItem::StartSimplePaint();
+	HDC miniViewDc = internallyClipped || isFrozen ? WindowsItem::StartBufferedPaint() : WindowsItem::StartSimplePaint();
 	::SetStretchBltMode(miniViewDc, COLORONCOLOR);
 
     int xDest = internallyClipped ? rcInternalClip.left : 0,
@@ -397,20 +474,32 @@ void MiniView::PaintMiniView()
 		int clipWidth = rcClip.right - rcClip.left, clipHeight = rcClip.bottom - rcClip.top;
         if ( internallyClipped )
             ClassWindow::FillPaintArea(GetSysColorBrush(COLOR_BACKGROUND));
-		::StretchBlt(miniViewDc, xDest, yDest, wDest, hDest, sourceDc, rcClip.left, rcClip.top, clipWidth, clipHeight, SRCCOPY);
+
+		if ( isFrozen && (user == nullptr || user->GetUseCachedImageWhenFrozen(*this)) && this->winGdiImageCache != nullptr )
+			this->winGdiImageCache->stretchBlt(miniViewDc, xDest, yDest, wDest, hDest, rcClip.left, rcClip.top, clipWidth, clipHeight, SRCCOPY);
+		else
+			::StretchBlt(miniViewDc, xDest, yDest, wDest, hDest, sourceDc, rcClip.left, rcClip.top, clipWidth, clipHeight, SRCCOPY);
 	}
 	else // Not clipped
 	{
 		RECT rcSource = {};
 		::GetClientRect(hSource, &rcSource);
-		int sourceWidth = rcSource.right - rcSource.left, sourceHeight = rcSource.bottom - rcSource.top;
+		int sourceWidth = rcSource.right - rcSource.left,
+			sourceHeight = rcSource.bottom - rcSource.top;
+
         RECT rcDest = {};
         ::GetClientRect(WindowsItem::getHandle(), &rcDest);
         if ( internallyClipped )
             ClassWindow::FillPaintArea(GetSysColorBrush(COLOR_BACKGROUND));
-        
-        ::StretchBlt(miniViewDc, xDest, yDest, wDest, hDest, sourceDc, 0, 0, sourceWidth, sourceHeight, SRCCOPY);
+
+		if ( isFrozen && (user == nullptr || user->GetUseCachedImageWhenFrozen(*this)) && this->winGdiImageCache != nullptr )
+			this->winGdiImageCache->stretchBlt(miniViewDc, xDest, yDest, wDest, hDest, 0, 0, sourceWidth, sourceHeight, SRCCOPY);
+		else
+			::StretchBlt(miniViewDc, xDest, yDest, wDest, hDest, sourceDc, 0, 0, sourceWidth, sourceHeight, SRCCOPY);
 	}
+
+	if ( isFrozen && (user == nullptr || user->GetShowFrozenIndicatorIcon(*this)) && MiniView::frozenIcon != NULL )
+		DrawIconEx(miniViewDc, wDest-32, 0, MiniView::frozenIcon, 0, 0, 0, NULL, DI_NORMAL);
 
 	WindowsItem::EndPaint();
 	::ReleaseDC(hSource, sourceDc);
@@ -718,29 +807,17 @@ void MiniView::CheckHideBySourceOnTop()
 	}
 }
 
-BITMAPINFO MiniView::GetBmi(s32 width, s32 height)
-{
-	BITMAPINFOHEADER bmiH = {};
-	bmiH.biSize = sizeof(BITMAPINFOHEADER);
-	bmiH.biWidth = width;
-	bmiH.biHeight = -height;
-	bmiH.biPlanes = 1;
-	bmiH.biBitCount = 24;
-	bmiH.biCompression = BI_RGB;
-	bmiH.biXPelsPerMeter = 1;
-	bmiH.biYPelsPerMeter = 1;
-
-	BITMAPINFO bmi = {};
-	bmi.bmiHeader = bmiH;
-	return bmi;
-}
-
 void MiniView::RunContextMenu()
 {
 	HMENU hMenu = ::CreatePopupMenu();
 	UINT flags = 0;
 	if ( !settingWindow )
 	{
+		if ( isFrozen && (user == nullptr || user->GetShowFrozenContextMenuItem(*this)) )
+		{
+			flags = MF_BYPOSITION | MF_ENABLED | MF_STRING | MF_UNCHECKED;
+			::InsertMenu(hMenu, (UINT)-1, flags, (UINT_PTR)Id::Frozen, icux::toUistring("Frozen?").c_str());
+		}
 		flags = MF_BYPOSITION | MF_ENABLED | MF_STRING | (lockRatio ? MF_CHECKED : MF_UNCHECKED);
 		::InsertMenu(hMenu, (UINT)-1, flags, (UINT_PTR)Id::LockRatio, icux::toUistring("Lock Size Ratio").c_str());
 		flags = MF_BYPOSITION | MF_ENABLED | MF_STRING | (hideWhenSourceOnTop ? MF_CHECKED : MF_UNCHECKED);
@@ -768,6 +845,7 @@ void MiniView::RunContextMenu()
 	bool performedCommand = true;
 	switch ( result )
 	{
+		case (BOOL)Id::Frozen: FrozenInfo(); break;
 		case (BOOL)Id::ClearClipRegion: ClearClipRegion(); break;
 		case (BOOL)Id::SetClipRegion: SetClipRegion(); break;
         case (BOOL)Id::MatchSource: MatchSource(true, true); break;
@@ -840,6 +918,124 @@ LRESULT MiniView::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		default: return ClassWindow::WndProc(hWnd, msg, wParam, lParam); break;
 	}
 	return 0;
+}
+
+WinImage::~WinImage()
+{
+
+}
+
+LONG WinImage::getWidth() const
+{
+	return width;
+}
+
+LONG WinImage::getHeight() const
+{
+	return height;
+}
+
+void WinImage::setDimensions(LONG width, LONG height)
+{
+	this->width = width;
+	this->height = height;
+}
+
+WinGdiImage::WinGdiImage(WinLib::WindowsItem & windowsItem) : WinImage(), hMemDc(NULL), bitmapInfo({}), bitmap(NULL)
+{
+	auto width = windowsItem.cliWidth(),
+		 height = windowsItem.cliHeight();
+
+	if ( width > 0 && height > 0 )
+	{
+		HDC hdc = windowsItem.getDC();
+		if ( hdc != NULL )
+			SetImage(hdc, width, height);
+	}
+}
+
+WinGdiImage::WinGdiImage(HWND hSource) : WinImage(), hMemDc(NULL), bitmapInfo({}), bitmap(NULL)
+{
+	if ( hSource != NULL ) {
+
+		RECT rcSource = {};
+		::GetClientRect(hSource, &rcSource);
+		auto sourceWidth = rcSource.right - rcSource.left,
+			 sourceHeight = rcSource.bottom - rcSource.top;
+
+		if ( sourceWidth > 0 && sourceHeight > 0 )
+		{
+			HDC hdc = ::GetDC(hSource);
+			if ( hdc != NULL )
+				SetImage(hdc, sourceWidth, sourceHeight);
+		}
+	}
+}
+
+WinGdiImage::~WinGdiImage()
+{
+	if ( this->bitmap != NULL )
+		::DeleteObject(bitmap);
+
+	if ( this->hMemDc != NULL )
+		::DeleteDC(hMemDc);
+}
+
+bool WinGdiImage::isValid()
+{
+	auto width = getWidth(),
+		 height = getHeight();
+
+	if ( width > 0 && height > 0 )
+	{
+		std::vector<uint32_t> pixels(size_t(width)*size_t(height), uint32_t(0));
+		return ::GetDIBits(hMemDc, bitmap, 0, height, &pixels[0], &bitmapInfo, DIB_RGB_COLORS) != 0
+			&& !isAllZero(pixels);
+	}
+	else
+		return false;
+}
+
+void WinGdiImage::stretchBlt(HDC hdcDest, int xDest, int yDest, int wDest, int hDest,
+	int xSrc, int ySrc, int wSrc, int hSrc, DWORD rop)
+{
+	::StretchBlt(hdcDest, xDest, yDest, wDest, hDest, hMemDc, xSrc, ySrc, wSrc, hSrc, rop);
+}
+
+void WinGdiImage::SetImage(HDC sourceDc, LONG width, LONG height)
+{
+	this->setDimensions(width, height);
+	this->hMemDc = ::CreateCompatibleDC(sourceDc);
+	if ( hMemDc != NULL )
+	{
+		this->SetBmi();
+		this->bitmap = ::CreateCompatibleBitmap(sourceDc, width, height);
+		if ( this->bitmap != NULL )
+		{
+			if ( SelectObject(this->hMemDc, this->bitmap) != NULL )
+				::BitBlt(hMemDc, 0, 0, width, height, sourceDc, 0, 0, SRCCOPY);
+		}
+	}
+}
+
+void WinGdiImage::SetBmi()
+{
+	auto width = getWidth(),
+		 height = getHeight();
+
+	if ( width > 0 && height > 0 )
+	{
+		this->bitmapInfo = {};
+		BITMAPINFOHEADER & bmiH = this->bitmapInfo.bmiHeader;
+		bmiH.biSize = sizeof(BITMAPINFOHEADER);
+		bmiH.biWidth = width;
+		bmiH.biHeight = -height;
+		bmiH.biPlanes = 1;
+		bmiH.biBitCount = 32;
+		bmiH.biCompression = BI_RGB;
+		bmiH.biXPelsPerMeter = 1;
+		bmiH.biYPelsPerMeter = 1;
+	}
 }
 
 void DrawWrappableString(HDC hDC, const std::string & utf8Str, int startX, int startY, int cliWidth, int cliHeight)

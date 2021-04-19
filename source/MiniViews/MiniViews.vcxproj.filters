@@ -24,5 +24,8 @@
     <Image Include="..\MiniViewsLib\MiniViews.ico">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="..\MiniViewsLib\Frozen.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

@@ -11,7 +11,10 @@ Preferences::Preferences(const RegistryKey &miniViewsKey) :
     DefaultMatchSourceSize(miniViewsKey, "DefaultMatchSourceSize", false),
     DefaultLockSizeRatio(miniViewsKey, "DefaultLockSizeRatio", true),
     DefaultHideWhenSourceOnTop(miniViewsKey, "DefaultHideWhenSourceOnTop", true),
-    DefaultClickableWhenOpaque(miniViewsKey, "DefaultClickableWhenOpaque", true)
+    DefaultClickableWhenOpaque(miniViewsKey, "DefaultClickableWhenOpaque", true),
+    UseCachedImageWhenFrozen(miniViewsKey, "UseCachedImageWhenFrozen", true),
+    ShowFrozenIndicatorIcon(miniViewsKey, "ShowFrozenIndicatorIcon", true),
+    ShowFrozenContextMenuItem(miniViewsKey, "ShowFrozenContextMenuItem", true)
 {
 
 }
@@ -38,5 +41,8 @@ bool Preferences::ClearSavedPreferences()
         DefaultLockSizeRatio.Clear() &&
         DefaultHideWhenSourceOnTop.Clear() &&
         DefaultClickableWhenOpaque.Clear() &&
+        UseCachedImageWhenFrozen.Clear() &&
+        ShowFrozenIndicatorIcon.Clear() &&
+        ShowFrozenContextMenuItem.Clear() &&
         MiniViewsKey.Clear();
 }

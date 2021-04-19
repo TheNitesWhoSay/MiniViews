@@ -50,6 +50,9 @@ class MiniViews : public WinLib::ClassWindow, public IUpdatable, public IMiniVie
         virtual bool GetDefaultMatchSourceSize(MiniView &miniView);
         virtual bool GetDefaultLockSizeRatio(MiniView &miniView);
         virtual bool GetDefaultHideWhenSourceOnTop(MiniView &miniView);
+		virtual bool GetUseCachedImageWhenFrozen(MiniView &miniView);
+		virtual bool GetShowFrozenIndicatorIcon(MiniView &miniView);
+		virtual bool GetShowFrozenContextMenuItem(MiniView &miniView);
 		bool CreateThis(); // Creates this window
 		bool RegisterHotkeys(); // Registers the relevant hotkeys for controlling the program
 		bool EnsureOnlyInstance();
