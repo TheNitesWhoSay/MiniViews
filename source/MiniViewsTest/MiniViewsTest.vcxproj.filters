@@ -20,4 +20,7 @@
       <Filter>Source Files\%2a</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
 </Project>

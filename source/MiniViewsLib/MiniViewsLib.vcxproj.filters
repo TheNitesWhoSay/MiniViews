@@ -62,6 +62,9 @@
     <ClCompile Include="Zerocmp.cpp">
       <Filter>Source Files\%2a</Filter>
     </ClCompile>
+    <ClCompile Include="WinrtGraphicsCapture.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MainDialog\AboutTab.h">
@@ -109,5 +112,11 @@
     <ClInclude Include="Zerocmp.h">
       <Filter>Header Files\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="WinrtGraphicsCapture.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

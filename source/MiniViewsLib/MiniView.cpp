@@ -27,7 +27,7 @@ const DWORD MiniView::editModeStyles(WS_THICKFRAME|WS_CAPTION|WS_SYSMENU);
 
 HICON MiniView::frozenIcon(NULL);
 
-MiniView::MiniView(IMiniViewUser* user) : hSource(NULL), settingWindow(true), editMode(true),
+MiniView::MiniView(IMiniViewUser* user) : graphicsCaptureMirror({}), hSource(NULL), settingWindow(true), editMode(true),
     hideWhenSourceOnTop(user->GetDefaultHideWhenSourceOnTop(*this)),
 	hiddenBySourceOnTop(true), hiddenByParent(false),
 	isGdiCompatible(false), isGraphicsCaptureCompatible(false), isFrozen(false),
@@ -35,7 +35,7 @@ MiniView::MiniView(IMiniViewUser* user) : hSource(NULL), settingWindow(true), ed
 	lastUserSetCliWidth(0), lastUserSetCliHeight(0),
     //lastFixedCliWidth(0), lastFixedCliHeight(0),
     lastCliWidthFixedTo(0), lastCliHeightFixedTo(0),
-    clipped(false), internallyClipped(false), whiteBrush(NULL), user(user)
+    clipped(false), internallyClipped(false), whiteBrush(NULL), blackBrush(NULL), user(user)
 {
 	rcClip.left = 0;
 	rcClip.top = 0;
@@ -45,8 +45,18 @@ MiniView::MiniView(IMiniViewUser* user) : hSource(NULL), settingWindow(true), ed
     rcInternalClip.top = 0;
     rcInternalClip.right = 0;
     rcInternalClip.bottom = 0;
-
+	
 	whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
+	blackBrush = CreateSolidBrush(RGB(0, 0, 0));
+}
+
+MiniView::~MiniView()
+{
+	if ( whiteBrush != NULL )
+		DeleteObject(whiteBrush);
+
+	if ( blackBrush != NULL )
+		DeleteObject(blackBrush);
 }
 
 bool MiniView::CreateThis(HWND hParent, HWND sourceHandle, int xc, int yc)
@@ -103,6 +113,7 @@ RECT MiniView::GetClipRect()
 
 void MiniView::SetClip(bool isClipped, int left, int top, int right, int bottom)
 {
+	BlackoutMiniView();
 	clipped = isClipped;
 	if ( clipped )
 	{
@@ -110,7 +121,8 @@ void MiniView::SetClip(bool isClipped, int left, int top, int right, int bottom)
 		rcClip.top = top;
 		rcClip.right = right;
 		rcClip.bottom = bottom;
-        
+        this->graphicsCaptureMirror.setClip(UINT(left), UINT(top), UINT(right), UINT(bottom));
+
         if ( user != nullptr )
         {
             bool matchSourcePos = user->GetDefaultMatchSourcePosition(*this);
@@ -125,6 +137,7 @@ void MiniView::SetClip(bool isClipped, int left, int top, int right, int bottom)
 
 void MiniView::SetClipRegion()
 {
+	BlackoutMiniView();
     int borderWidth = 0, borderHeight = 0;
     GetBorderSize(borderWidth, borderHeight);
 	WindowsItem::SetWidth(lastUserSetCliWidth+borderWidth);
@@ -135,6 +148,8 @@ void MiniView::SetClipRegion()
 
 void MiniView::ClearClipRegion()
 {
+	BlackoutMiniView();
+	this->graphicsCaptureMirror.clearClip();
     int borderWidth = 0, borderHeight = 0;
     GetBorderSize(borderWidth, borderHeight);
 	WindowsItem::SetWidth(lastUserSetCliWidth + borderWidth);
@@ -303,26 +318,7 @@ void MiniView::ValidateProperties()
 
 void MiniView::ValidateImage()
 {
-	// TODO: new flags: isGdiCompatible, isGraphicsCaptureCompatible, isFrozen, start all as false
-	// TODO: when you start up a MiniView and every half second while (!isGdiCompatible && !isGraphicsCaptureCompatible)...
-	//	try to pull an image via GDI, if you succeed, set isGdiCompatible to true, if you fail, try to pull an image via Windows Graphics Capture, if you succeed, set isGraphicsCaptureCompatible to true
-	//  once one of these is set, you stop automatically checking
-	// TODO: every half second, if isGdiCompatible or isGraphicsCaptureCompatible are already set and isFrozen is not set, grab the image currently on the MiniView...
-	//	if it's valid, cache it as "lastValidImage"...
-	//	if it's invalid, set isFrozen flag to true, activate freeze icon (w/ tooltip when in edit mode) and set the cached image as the display
-	//  if isFrozen was already set, instead check the source for a new valid image, if you have one, unfreeze the MiniView
-
-	if ( !this->isGdiCompatible && !this->isGraphicsCaptureCompatible ) // Check for compatible image...
-	{
-		WinGdiImage winGdiImage(hSource);
-		if ( winGdiImage.isValid() )
-		{
-			this->isGdiCompatible = true;
-			this->isFrozen = false;
-		}
-		// TODO: Check graphics capture compatibility
-	}
-	else if ( isFrozen ) // Check for unfreeze opportunity...
+	if ( isFrozen ) // Check for unfreeze opportunity...
 	{
 		if ( this->isGdiCompatible )
 		{
@@ -460,49 +456,53 @@ void MiniView::PaintInstructions()
 
 void MiniView::PaintMiniView()
 {
-	HDC sourceDc = ::GetDC(hSource);
-	HDC miniViewDc = internallyClipped || isFrozen ? WindowsItem::StartBufferedPaint() : WindowsItem::StartSimplePaint();
-	::SetStretchBltMode(miniViewDc, COLORONCOLOR);
-
-    int xDest = internallyClipped ? rcInternalClip.left : 0,
-        yDest = internallyClipped ? rcInternalClip.top : 0,
-        wDest = internallyClipped ? rcInternalClip.right - rcInternalClip.left : WindowsItem::PaintWidth(),
-        hDest = internallyClipped ? rcInternalClip.bottom - rcInternalClip.top : WindowsItem::PaintHeight();
-
-	if ( clipped )
+	// If not GDI compatible, this method does nothing and graphicsCaptureMirror is responsible for graphic replication
+	if ( this->isGdiCompatible ) 
 	{
-		int clipWidth = rcClip.right - rcClip.left, clipHeight = rcClip.bottom - rcClip.top;
-        if ( internallyClipped )
-            ClassWindow::FillPaintArea(GetSysColorBrush(COLOR_BACKGROUND));
+		HDC sourceDc = ::GetDC(hSource);
+		HDC miniViewDc = internallyClipped || isFrozen ? WindowsItem::StartBufferedPaint() : WindowsItem::StartSimplePaint();
+		::SetStretchBltMode(miniViewDc, COLORONCOLOR);
 
-		if ( isFrozen && (user == nullptr || user->GetUseCachedImageWhenFrozen(*this)) && this->winGdiImageCache != nullptr )
-			this->winGdiImageCache->stretchBlt(miniViewDc, xDest, yDest, wDest, hDest, rcClip.left, rcClip.top, clipWidth, clipHeight, SRCCOPY);
-		else
-			::StretchBlt(miniViewDc, xDest, yDest, wDest, hDest, sourceDc, rcClip.left, rcClip.top, clipWidth, clipHeight, SRCCOPY);
+		int xDest = internallyClipped ? rcInternalClip.left : 0,
+			yDest = internallyClipped ? rcInternalClip.top : 0,
+			wDest = internallyClipped ? rcInternalClip.right - rcInternalClip.left : WindowsItem::PaintWidth(),
+			hDest = internallyClipped ? rcInternalClip.bottom - rcInternalClip.top : WindowsItem::PaintHeight();
+
+		if ( clipped )
+		{
+			int clipWidth = rcClip.right - rcClip.left, clipHeight = rcClip.bottom - rcClip.top;
+			if ( internallyClipped )
+				ClassWindow::FillPaintArea(GetSysColorBrush(COLOR_BACKGROUND));
+
+			if ( isFrozen && (user == nullptr || user->GetUseCachedImageWhenFrozen(*this)) && this->winGdiImageCache != nullptr )
+				this->winGdiImageCache->stretchBlt(miniViewDc, xDest, yDest, wDest, hDest, rcClip.left, rcClip.top, clipWidth, clipHeight, SRCCOPY);
+			else
+				::StretchBlt(miniViewDc, xDest, yDest, wDest, hDest, sourceDc, rcClip.left, rcClip.top, clipWidth, clipHeight, SRCCOPY);
+		}
+		else // Not clipped
+		{
+			RECT rcSource = {};
+			::GetClientRect(hSource, &rcSource);
+			int sourceWidth = rcSource.right - rcSource.left,
+				sourceHeight = rcSource.bottom - rcSource.top;
+
+			RECT rcDest = {};
+			::GetClientRect(WindowsItem::getHandle(), &rcDest);
+			if ( internallyClipped )
+				ClassWindow::FillPaintArea(GetSysColorBrush(COLOR_BACKGROUND));
+
+			if (isFrozen && (user == nullptr || user->GetUseCachedImageWhenFrozen(*this)) && this->winGdiImageCache != nullptr)
+				this->winGdiImageCache->stretchBlt(miniViewDc, xDest, yDest, wDest, hDest, 0, 0, sourceWidth, sourceHeight, SRCCOPY);
+			else
+				::StretchBlt(miniViewDc, xDest, yDest, wDest, hDest, sourceDc, 0, 0, sourceWidth, sourceHeight, SRCCOPY);
+		}
+
+		if ( isFrozen && (user == nullptr || user->GetShowFrozenIndicatorIcon(*this)) && MiniView::frozenIcon != NULL )
+			DrawIconEx(miniViewDc, wDest-32, 0, MiniView::frozenIcon, 0, 0, 0, NULL, DI_NORMAL);
+
+		WindowsItem::EndPaint();
+		::ReleaseDC(hSource, sourceDc);
 	}
-	else // Not clipped
-	{
-		RECT rcSource = {};
-		::GetClientRect(hSource, &rcSource);
-		int sourceWidth = rcSource.right - rcSource.left,
-			sourceHeight = rcSource.bottom - rcSource.top;
-
-        RECT rcDest = {};
-        ::GetClientRect(WindowsItem::getHandle(), &rcDest);
-        if ( internallyClipped )
-            ClassWindow::FillPaintArea(GetSysColorBrush(COLOR_BACKGROUND));
-
-		if ( isFrozen && (user == nullptr || user->GetUseCachedImageWhenFrozen(*this)) && this->winGdiImageCache != nullptr )
-			this->winGdiImageCache->stretchBlt(miniViewDc, xDest, yDest, wDest, hDest, 0, 0, sourceWidth, sourceHeight, SRCCOPY);
-		else
-			::StretchBlt(miniViewDc, xDest, yDest, wDest, hDest, sourceDc, 0, 0, sourceWidth, sourceHeight, SRCCOPY);
-	}
-
-	if ( isFrozen && (user == nullptr || user->GetShowFrozenIndicatorIcon(*this)) && MiniView::frozenIcon != NULL )
-		DrawIconEx(miniViewDc, wDest-32, 0, MiniView::frozenIcon, 0, 0, 0, NULL, DI_NORMAL);
-
-	WindowsItem::EndPaint();
-	::ReleaseDC(hSource, sourceDc);
 }
 
 bool MiniView::GetClientScreenTopLeft(int &left, int &top)
@@ -747,32 +747,46 @@ std::optional<std::string> getWindowText(HWND hWindow)
 void MiniView::WindowDropped()
 {
 	POINT pt = {};
-    if ( ::GetCursorPos(&pt) == TRUE && settingWindow )
+    if ( ::GetCursorPos(&pt) == TRUE && this->settingWindow )
     {
         WindowsItem::Hide();
         HWND newHandle = ::WindowFromPhysicalPoint(pt);
-        SetSourceHandle(newHandle);
-        ::GetClientRect(hSource, &rcClip);
-        lastUserSetCliWidth = WindowsItem::cliWidth();
-        lastUserSetCliHeight = WindowsItem::cliHeight();
-        settingWindow = false;
+		
+		WinGdiImage winGdiImage(newHandle);
+		if ( winGdiImage.isValid() )
+		{
+			this->isGdiCompatible = true;
+			this->isGraphicsCaptureCompatible = false;
+		}
+		else
+		{
+			newHandle = this->graphicsCaptureMirror.createMirror(WindowsItem::getHandle(), newHandle); // Mirror may need to move to a parent window
+			this->isGraphicsCaptureCompatible = true;
+			this->isFrozen = false;
+		}
 
-		auto sourceWindowName = getWindowText(hSource);
-		if ( auto sourceWindowName = getWindowText(hSource) )
+        this->SetSourceHandle(newHandle);
+        ::GetClientRect(this->hSource, &rcClip);
+        this->lastUserSetCliWidth = WindowsItem::cliWidth();
+        this->lastUserSetCliHeight = WindowsItem::cliHeight();
+        this->settingWindow = false;
+
+		auto sourceWindowName = getWindowText(this->hSource);
+		if ( auto sourceWindowName = getWindowText(this->hSource) )
 			SetWinText("Mini View - [" + (*sourceWindowName) + "]");
         else
 			SetWinText("Mini View (Unknown)");
 
         WindowsItem::Show();
 
-        if ( user != nullptr )
+        if ( this->user != nullptr )
         {
-            bool matchSourcePos = user->GetDefaultMatchSourcePosition(*this);
-            bool matchSourceSize = user->GetDefaultMatchSourceSize(*this);
+            bool matchSourcePos = this->user->GetDefaultMatchSourcePosition(*this);
+            bool matchSourceSize = this->user->GetDefaultMatchSourceSize(*this);
             if ( matchSourcePos || matchSourceSize )
                 MatchSource(matchSourcePos, matchSourceSize);
 
-            user->NotifyChange(*this);
+            this->user->NotifyChange(*this);
         }
 	}
 }
@@ -883,12 +897,21 @@ void MiniView::OpenProperties()
 	WinLib::Message("Unimplemented: Open MiniView Properties");
 }
 
+void MiniView::BlackoutMiniView()
+{
+	HDC hDC = WindowsItem::StartBufferedPaint();
+	WindowsItem::FillPaintArea(blackBrush);
+	WindowsItem::EndPaint();
+}
+
 int MiniView::EraseBackground()
 {
 	if ( settingWindow )
 		PaintInstructions();
-	else
+	else if ( this->isGdiCompatible )
 		PaintMiniView();
+	else
+		BlackoutMiniView();
 
 	return 1;
 }

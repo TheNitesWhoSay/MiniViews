@@ -1,6 +1,7 @@
 #ifndef MINIVIEW_H
 #define MINIVIEW_H
 #include "../WindowsLib/WindowsUi.h"
+#include "WinrtGraphicsCapture.h"
 
 class MiniView;
 
@@ -66,6 +67,7 @@ class MiniView : public WinLib::ClassWindow
 	public:
 
 		MiniView(IMiniViewUser* user);
+		~MiniView();
 		bool CreateThis(HWND hParent, HWND hSource, int xc, int yc);
 		void DestroyThis();
 		static void ClearStaticCache();
@@ -125,6 +127,7 @@ class MiniView : public WinLib::ClassWindow
 		void ProcessCloseMessage();
 		void HideCommand();
 		void OpenProperties();
+		void BlackoutMiniView();
 		int EraseBackground();
 		LRESULT NonClientHitTest(WPARAM wParam, LPARAM lParam);
         LRESULT MouseMove(WPARAM wParam, LPARAM lParam);
@@ -138,6 +141,7 @@ class MiniView : public WinLib::ClassWindow
 
 	private:
 
+		WinrtGraphics::Mirror graphicsCaptureMirror; // Graphics capture mirror, only used if BitBlt fails
 		HWND hSource; // A handle to the window the MiniView is viewing
 		bool settingWindow; // Whether this MiniView is currently being set
 		bool editMode; // Whether this MiniView is currently in edit mode
@@ -157,6 +161,7 @@ class MiniView : public WinLib::ClassWindow
         bool internallyClipped; // Whether this mini-window is only drawing to a portion of itself
         RECT rcInternalClip; // The internal area of a mini-view to which the source window is being copied
 		HBRUSH whiteBrush;
+		HBRUSH blackBrush;
 		IMiniViewUser* user;
 		std::unique_ptr<WinGdiImage> winGdiImageCache;
 

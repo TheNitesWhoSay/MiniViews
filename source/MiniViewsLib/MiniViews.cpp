@@ -60,11 +60,12 @@ MiniViews::~MiniViews()
 
 int MiniViews::Run(int showCommand)
 {
-	SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
 	RefreshNotificationIconArea();
 
 	if ( !EnsureOnlyInstance() )
 		return 1;
+
+	WinrtGraphics::InitializeGraphicsCaptureApplication(true);
 
 	if ( !CreateThis() )
 		return CriticalError(2, "Window creation failed.");
