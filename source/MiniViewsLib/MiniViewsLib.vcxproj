@@ -316,6 +316,7 @@
     <ClCompile Include="MainDialog\GeneralTab.cpp" />
     <ClCompile Include="MainDialog\MainDialog.cpp" />
     <ClCompile Include="MainDialog\ViewsTab.cpp" />
+    <ClCompile Include="Math.cpp" />
     <ClCompile Include="MiniView.cpp" />
     <ClCompile Include="MiniViews.cpp" />
     <ClCompile Include="Preferences.cpp" />
@@ -333,6 +334,7 @@
     <ClInclude Include="MainDialog\GeneralTab.h" />
     <ClInclude Include="MainDialog\MainDialog.h" />
     <ClInclude Include="MainDialog\ViewsTab.h" />
+    <ClInclude Include="Math.h" />
     <ClInclude Include="MiniView.h" />
     <ClInclude Include="MiniViews.h" />
     <ClInclude Include="Preferences.h" />

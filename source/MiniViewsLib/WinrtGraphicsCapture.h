@@ -68,7 +68,7 @@ namespace WinrtGraphics
             winrt::Windows::Graphics::DirectX::DirectXPixelFormat pixelFormat = winrt::Windows::Graphics::DirectX::DirectXPixelFormat::B8G8R8A8UIntNormalized,
             UINT bufferCount = 2);
 
-        void setClip(UINT left, UINT top, UINT right, UINT bottom);
+        void setClip(UINT left, UINT top, UINT right, UINT bottom, LONG destWidth, LONG destHeight);
 
         void clearClip();
 
@@ -100,7 +100,7 @@ namespace WinrtGraphics
         winrt::Windows::Graphics::DirectX::DirectXPixelFormat pixelFormat = winrt::Windows::Graphics::DirectX::DirectXPixelFormat::B8G8R8A8UIntNormalized;
         UINT bufferCount = 0; // Count of buffers in the framePool and swap chain
         bool clipped = false;
-        D3D11_BOX clipRegion {};
+        D3D11_BOX sourceClipRegion {};
 
         winrt::Windows::UI::Composition::Compositor compositor{ nullptr }; // Creates and manages visual elements associated with the mirror casing
         winrt::Windows::UI::Composition::ContainerVisual containerVisual{ nullptr }; // A node in a visual tree that can have children

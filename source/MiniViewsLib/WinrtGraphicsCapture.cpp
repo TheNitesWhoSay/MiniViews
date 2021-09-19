@@ -1,4 +1,5 @@
 #include "WinrtGraphicsCapture.h"
+#include "Math.h"
 #include <winrt/base.h>
 #include <winrt/Windows.System.h>
 #include <windows.graphics.capture.interop.h>
@@ -276,26 +277,51 @@ namespace WinrtGraphics
         return sourceWindow;
     }
     
-    void Mirror::setClip(UINT left, UINT top, UINT right, UINT bottom)
+    void Mirror::setClip(UINT sourceClipLeft, UINT sourceClipTop, UINT sourceClipRight, UINT sourceClipBottom, LONG destWidth, LONG destHeight)
     {
-        this->clipRegion.left = left;
-        this->clipRegion.top = top;
-        this->clipRegion.front = 0;
-        this->clipRegion.right = right;
-        this->clipRegion.bottom = bottom;
-        this->clipRegion.back = 1;
+        this->sourceClipRegion.left = sourceClipLeft;
+        this->sourceClipRegion.top = sourceClipTop;
+        this->sourceClipRegion.front = 0;
+        this->sourceClipRegion.right = sourceClipRight;
+        this->sourceClipRegion.bottom = sourceClipBottom;
+        this->sourceClipRegion.back = 1;
+        UINT sourceClipWidth = sourceClipRight - sourceClipLeft;
+        UINT sourceClipHeight = sourceClipBottom - sourceClipTop;
+        
+        if ( this->containerVisual )
+        {
+            this->containerVisual.Offset({0, 0, 0});
+            this->containerVisual.RelativeSizeAdjustment({ 1.0f, 1.0f });
+        }
+
+        if ( this->spriteVisual )
+        {
+            this->spriteVisual.RelativeSizeAdjustment({ 0.0f, 0.0f });
+            this->spriteVisual.Offset({0, 0, 0});
+            this->spriteVisual.Size({
+                float(RoundedQuotient(this->size.Width*destWidth, sourceClipWidth)),
+                float(RoundedQuotient(this->size.Height*destHeight, sourceClipHeight))});
+        }
+
         this->clipped = true;
     }
     
     void Mirror::clearClip()
     {
         this->clipped = false;
-        this->clipRegion.left = 0;
-        this->clipRegion.top = 0;
-        this->clipRegion.front = 0;
-        this->clipRegion.right = 0;
-        this->clipRegion.bottom = 0;
-        this->clipRegion.back = 1;
+
+        this->sourceClipRegion.left = 0;
+        this->sourceClipRegion.top = 0;
+        this->sourceClipRegion.front = 0;
+        this->sourceClipRegion.right = 0;
+        this->sourceClipRegion.bottom = 0;
+        this->sourceClipRegion.back = 1;
+
+        if ( this->spriteVisual )
+        {
+            this->spriteVisual.Size({0.0f, 0.0f});
+            this->spriteVisual.RelativeSizeAdjustment({ 1.0f, 1.0f });
+        }
     }
 
     void Mirror::reset()
@@ -327,8 +353,6 @@ namespace WinrtGraphics
         this->spriteVisual.RelativeSizeAdjustment({ 1.0f, 1.0f });
 
         this->compositionSurfaceBrush = this->compositor.CreateSurfaceBrush();
-        this->compositionSurfaceBrush.HorizontalAlignmentRatio(0.5f);
-        this->compositionSurfaceBrush.VerticalAlignmentRatio(0.5f);
         this->compositionSurfaceBrush.Stretch(winrt::Windows::UI::Composition::CompositionStretch::Uniform);
 
         this->spriteVisual.Brush(this->compositionSurfaceBrush);
@@ -350,7 +374,7 @@ namespace WinrtGraphics
         winrt::check_hresult(this->swapChain->GetBuffer(0, winrt::guid_of<ID3D11Texture2D>(), backBuffer.put_void())); // Get back buffer from swapChain
 
         if ( this->clipped )
-            this->d3dContext->CopySubresourceRegion(backBuffer.get(), 0, 0, 0, 0, sourceTexture.get(), 0, &clipRegion); // Copy clipped texture to back buffer
+            this->d3dContext->CopySubresourceRegion(backBuffer.get(), 0, 0, 0, 0, sourceTexture.get(), 0, &sourceClipRegion); // Copy clipped texture to back buffer
         else
             this->d3dContext->CopyResource(backBuffer.get(), sourceTexture.get()); // Copy surfaceTexture to the swap chain back buffer from source
     }

@@ -5,6 +5,7 @@
 #include <ShellScalingApi.h>
 #include <optional>
 #include "Zerocmp.h"
+#include "Math.h"
 
 enum class Id : int
 {
@@ -121,7 +122,6 @@ void MiniView::SetClip(bool isClipped, int left, int top, int right, int bottom)
 		rcClip.top = top;
 		rcClip.right = right;
 		rcClip.bottom = bottom;
-        this->graphicsCaptureMirror.setClip(UINT(left), UINT(top), UINT(right), UINT(bottom));
 
         if ( user != nullptr )
         {
@@ -132,6 +132,9 @@ void MiniView::SetClip(bool isClipped, int left, int top, int right, int bottom)
         }
 
 		FixRatio();
+		int wDest = internallyClipped ? rcInternalClip.right - rcInternalClip.left : WindowsItem::cliWidth(),
+			hDest = internallyClipped ? rcInternalClip.bottom - rcInternalClip.top : WindowsItem::cliHeight();
+        this->graphicsCaptureMirror.setClip(UINT(rcClip.left), UINT(rcClip.top), UINT(rcClip.right), UINT(rcClip.bottom), wDest, hDest);
 	}
 }
 
@@ -444,6 +447,13 @@ void MiniView::MatchSource(bool matchPos, bool matchSize)
             lastUserSetCliHeight = cliHeight();
         }
 	}
+
+	if ( this->clipped )
+	{
+		int wDest = internallyClipped ? rcInternalClip.right - rcInternalClip.left : WindowsItem::cliWidth(),
+			hDest = internallyClipped ? rcInternalClip.bottom - rcInternalClip.top : WindowsItem::cliHeight();
+        this->graphicsCaptureMirror.setClip(UINT(rcClip.left), UINT(rcClip.top), UINT(rcClip.right), UINT(rcClip.bottom), wDest, hDest);
+	}
 }
 
 void MiniView::PaintInstructions()
@@ -692,7 +702,13 @@ void MiniView::DoSizing(WPARAM wParam, RECT* rect)
 	}
 	lastUserSetCliWidth = rect->right - rect->left - borderWidth;
 	lastUserSetCliHeight = rect->bottom - rect->top - borderHeight;
-    
+	
+	if ( this->clipped )
+	{
+		int wDest = internallyClipped ? rcInternalClip.right - rcInternalClip.left : WindowsItem::cliWidth(),
+			hDest = internallyClipped ? rcInternalClip.bottom - rcInternalClip.top : WindowsItem::cliHeight();
+        this->graphicsCaptureMirror.setClip(UINT(rcClip.left), UINT(rcClip.top), UINT(rcClip.right), UINT(rcClip.bottom), wDest, hDest);
+	}
 }
 
 void MiniView::SizeFinished()
@@ -1105,23 +1121,4 @@ void DrawWrappableString(HDC hDC, const std::string & utf8Str, int startX, int s
 			prevBottom += lineHeight;
 		}
 	}
-}
-
-int RoundedQuotient(int dividend, int divisor)
-{
-    if ( divisor > 0 )
-    {
-        if ( dividend > 0 ) // Both positive
-            return (dividend + divisor / 2) / divisor;
-        else if ( dividend < 0 ) // Dividend negative, divisor positive
-            return -(((-dividend) + divisor / 2) / divisor);
-    }
-    else if ( divisor < 0 )
-    {
-        if ( dividend > 0 ) // Dividend positive, divisor negative
-            return -((dividend + (-divisor) / 2) / (-divisor));
-        else if ( dividend < 0 ) // Both negative
-            return ((-dividend) + (-divisor) / 2) / (-divisor);
-    }
-    return 0; // Dividend and/or divisor is zero
 }

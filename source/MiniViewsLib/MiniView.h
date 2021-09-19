@@ -184,6 +184,4 @@ private:
 
 void DrawWrappableString(HDC hDC, const std::string & str, int startX, int startY, int cliWidth, int cliHeight);
 
-int RoundedQuotient(int dividend, int divisor);
-
 #endif
