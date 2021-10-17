@@ -482,6 +482,16 @@ void MiniView::PaintInstructions()
 	WindowsItem::EndPaint();
 }
 
+RECT getDpiScaledClip(const RECT & rcClip, LONG sourceDpi, LONG destDpi)
+{
+	RECT rect = {};
+	rect.left = rcClip.left*sourceDpi/destDpi;
+	rect.top = rcClip.top*sourceDpi/destDpi;
+	rect.right = rcClip.right*sourceDpi/destDpi;
+	rect.bottom = rcClip.bottom*sourceDpi/destDpi;
+	return rect;
+}
+
 void MiniView::PaintMiniView()
 {
 	// If not GDI compatible, this method does nothing and graphicsCaptureMirror is responsible for graphic replication
@@ -496,26 +506,33 @@ void MiniView::PaintMiniView()
 			wDest = internallyClipped ? rcInternalClip.right - rcInternalClip.left : WindowsItem::PaintWidth(),
 			hDest = internallyClipped ? rcInternalClip.bottom - rcInternalClip.top : WindowsItem::PaintHeight();
 
+		HWND hMiniView = WindowsItem::getHandle();
+		LONG sourceDpi = LONG(GetDpiForWindow(hSource)),
+			 destDpi = LONG(GetDpiForWindow(hMiniView));
+
 		if ( clipped )
 		{
-			int clipWidth = rcClip.right - rcClip.left, clipHeight = rcClip.bottom - rcClip.top;
+			RECT rcDpiClip = getDpiScaledClip(this->rcClip, sourceDpi, destDpi);
+			int clipWidth = (rcDpiClip.right - rcDpiClip.left),
+				clipHeight = (rcDpiClip.bottom - rcDpiClip.top);
+
 			if ( internallyClipped )
 				ClassWindow::FillPaintArea(GetSysColorBrush(COLOR_BACKGROUND));
 
 			if ( isFrozen && (user == nullptr || user->GetUseCachedImageWhenFrozen(*this)) && this->winGdiImageCache != nullptr )
-				this->winGdiImageCache->stretchBlt(miniViewDc, xDest, yDest, wDest, hDest, rcClip.left, rcClip.top, clipWidth, clipHeight, SRCCOPY);
+				this->winGdiImageCache->stretchBlt(miniViewDc, xDest, yDest, wDest, hDest, rcDpiClip.left, rcDpiClip.top, clipWidth, clipHeight, SRCCOPY);
 			else
-				::StretchBlt(miniViewDc, xDest, yDest, wDest, hDest, sourceDc, rcClip.left, rcClip.top, clipWidth, clipHeight, SRCCOPY);
+				::StretchBlt(miniViewDc, xDest, yDest, wDest, hDest, sourceDc, rcDpiClip.left, rcDpiClip.top, clipWidth, clipHeight, SRCCOPY);
 		}
 		else // Not clipped
 		{
 			RECT rcSource = {};
 			::GetClientRect(hSource, &rcSource);
-			int sourceWidth = rcSource.right - rcSource.left,
-				sourceHeight = rcSource.bottom - rcSource.top;
+			int sourceWidth = int((rcSource.right - rcSource.left)*sourceDpi/destDpi),
+				sourceHeight = int((rcSource.bottom - rcSource.top)*sourceDpi/destDpi);
 
 			RECT rcDest = {};
-			::GetClientRect(WindowsItem::getHandle(), &rcDest);
+			::GetClientRect(hMiniView, &rcDest);
 			if ( internallyClipped )
 				ClassWindow::FillPaintArea(GetSysColorBrush(COLOR_BACKGROUND));
 
