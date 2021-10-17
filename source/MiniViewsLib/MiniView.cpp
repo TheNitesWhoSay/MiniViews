@@ -737,7 +737,10 @@ void MiniView::DoSizing(WPARAM wParam, RECT* rect)
 	}
 	lastUserSetCliWidth = rect->right - rect->left - borderWidth;
 	lastUserSetCliHeight = rect->bottom - rect->top - borderHeight;
-	
+}
+
+void MiniView::SizeFinished()
+{
 	if ( this->clipped && this->isGraphicsCaptureCompatible )
 	{
 		RECT sourceClientRect = {};
@@ -746,10 +749,7 @@ void MiniView::DoSizing(WPARAM wParam, RECT* rect)
 			 hSrc = sourceClientRect.bottom - sourceClientRect.top;
         this->graphicsCaptureMirror.setClip(rcClip.left, rcClip.top, rcClip.right, rcClip.bottom, wSrc, hSrc);
 	}
-}
 
-void MiniView::SizeFinished()
-{
 	if ( user != nullptr )
 		user->NotifyChange(*this);
 }
@@ -797,53 +797,58 @@ std::optional<std::string> getWindowText(HWND hWindow)
 	return {};
 }
 
-void MiniView::WindowDropped()
+void MiniView::ExitSizeMove()
 {
-	POINT pt = {};
-    if ( ::GetCursorPos(&pt) == TRUE && this->settingWindow )
-    {
-        WindowsItem::Hide();
-        HWND newHandle = ::WindowFromPhysicalPoint(pt);
+	if ( this->settingWindow ) // Blank MiniView dropped
+	{
+		POINT pt = {};
+		if ( ::GetCursorPos(&pt) == TRUE )
+		{
+			WindowsItem::Hide();
+			HWND newHandle = ::WindowFromPhysicalPoint(pt);
 		
-		WinGdiImage winGdiImage(newHandle);
-		if ( winGdiImage.isValid() )
-		{
-			this->isGdiCompatible = true;
-			this->isGraphicsCaptureCompatible = false;
+			WinGdiImage winGdiImage(newHandle);
+			if ( winGdiImage.isValid() )
+			{
+				this->isGdiCompatible = true;
+				this->isGraphicsCaptureCompatible = false;
+			}
+			else
+			{
+				newHandle = this->graphicsCaptureMirror.createMirror(WindowsItem::getHandle(), newHandle); // Mirror may need to move to a parent window
+				this->isGraphicsCaptureCompatible = true;
+				this->isFrozen = false;
+			}
+
+			this->SetSourceHandle(newHandle);
+			::GetClientRect(this->hSource, &rcClip);
+			this->sourceSize.cx = rcClip.right-rcClip.left;
+			this->sourceSize.cy = rcClip.bottom-rcClip.top;
+			this->lastUserSetCliWidth = WindowsItem::cliWidth();
+			this->lastUserSetCliHeight = WindowsItem::cliHeight();
+			this->settingWindow = false;
+
+			auto sourceWindowName = getWindowText(this->hSource);
+			if ( auto sourceWindowName = getWindowText(this->hSource) )
+				SetWinText("Mini View - [" + (*sourceWindowName) + "]");
+			else
+				SetWinText("Mini View (Unknown)");
+
+			WindowsItem::Show();
+
+			if ( this->user != nullptr )
+			{
+				bool matchSourcePos = this->user->GetDefaultMatchSourcePosition(*this);
+				bool matchSourceSize = this->user->GetDefaultMatchSourceSize(*this);
+				if ( matchSourcePos || matchSourceSize )
+					MatchSource(matchSourcePos, matchSourceSize);
+
+				this->user->NotifyChange(*this);
+			}
 		}
-		else
-		{
-			newHandle = this->graphicsCaptureMirror.createMirror(WindowsItem::getHandle(), newHandle); // Mirror may need to move to a parent window
-			this->isGraphicsCaptureCompatible = true;
-			this->isFrozen = false;
-		}
-
-        this->SetSourceHandle(newHandle);
-        ::GetClientRect(this->hSource, &rcClip);
-		this->sourceSize.cx = rcClip.right-rcClip.left;
-		this->sourceSize.cy = rcClip.bottom-rcClip.top;
-        this->lastUserSetCliWidth = WindowsItem::cliWidth();
-        this->lastUserSetCliHeight = WindowsItem::cliHeight();
-        this->settingWindow = false;
-
-		auto sourceWindowName = getWindowText(this->hSource);
-		if ( auto sourceWindowName = getWindowText(this->hSource) )
-			SetWinText("Mini View - [" + (*sourceWindowName) + "]");
-        else
-			SetWinText("Mini View (Unknown)");
-
-        WindowsItem::Show();
-
-        if ( this->user != nullptr )
-        {
-            bool matchSourcePos = this->user->GetDefaultMatchSourcePosition(*this);
-            bool matchSourceSize = this->user->GetDefaultMatchSourceSize(*this);
-            if ( matchSourcePos || matchSourceSize )
-                MatchSource(matchSourcePos, matchSourceSize);
-
-            this->user->NotifyChange(*this);
-        }
 	}
+	else // Size or move finished
+		SizeFinished();
 }
 
 bool MiniView::IsSourceOnTop()
@@ -984,11 +989,10 @@ LRESULT MiniView::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch ( msg )
 	{
-		case WM_EXITSIZEMOVE: WindowDropped(); break;
+		case WM_EXITSIZEMOVE: ExitSizeMove(); break;
 		case WM_CLOSE: ProcessCloseMessage(); break;
 		case WM_ERASEBKGND: return EraseBackground(); break;
 		case WM_SIZING: DoSizing(wParam, (RECT*)lParam); return TRUE; break;
-		case WM_SIZE: SizeFinished(); break;
 		case WM_MOVE: WindowMoved(); break;
 		case WM_NCRBUTTONUP: RunContextMenu(); break;
 		case WM_GETMINMAXINFO: SetMinMaxSize(*(MINMAXINFO*)lParam); break;
