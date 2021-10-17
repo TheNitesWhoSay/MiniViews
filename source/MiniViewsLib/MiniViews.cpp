@@ -2,7 +2,6 @@
 #include "Preferences.h"
 #include "Resource.h"
 #include "Version.h"
-#include <ShellScalingApi.h>
 
 enum class Msg : UINT
 {
@@ -60,11 +59,12 @@ MiniViews::~MiniViews()
 
 int MiniViews::Run(int showCommand)
 {
-	SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
 	RefreshNotificationIconArea();
 
 	if ( !EnsureOnlyInstance() )
 		return 1;
+
+	WinrtGraphics::InitializeGraphicsCaptureApplication(true);
 
 	if ( !CreateThis() )
 		return CriticalError(2, "Window creation failed.");
@@ -106,6 +106,7 @@ int MiniViews::Run(int showCommand)
 	while ( keepRunning );
 
 	ClearMiniViews();
+	MiniView::ClearStaticCache();
 	updater.StopTimedUpdates();
 	RemoveNotificationIcon();
 
@@ -155,7 +156,7 @@ void MiniViews::RunHalfSecondActions()
 	if ( prefs.UseNotificationIcon.Get() )
 		CreateNotificationIcon();
 	for ( auto &miniView : currMiniViews )
-		miniView->ValidateProperties();
+		miniView->RunHalfSecondActions();
 }
 
 void MiniViews::TimedUpdate()
@@ -239,6 +240,21 @@ bool MiniViews::GetDefaultLockSizeRatio(MiniView &)
 bool MiniViews::GetDefaultHideWhenSourceOnTop(MiniView &)
 {
     return prefs.DefaultHideWhenSourceOnTop.Get();
+}
+
+bool MiniViews::GetUseCachedImageWhenFrozen(MiniView &miniView)
+{
+	return prefs.UseCachedImageWhenFrozen.Get();
+}
+
+bool MiniViews::GetShowFrozenIndicatorIcon(MiniView &miniView)
+{
+	return prefs.ShowFrozenIndicatorIcon.Get();
+}
+
+bool MiniViews::GetShowFrozenContextMenuItem(MiniView &miniView)
+{
+	return prefs.ShowFrozenContextMenuItem.Get();
 }
 
 void MiniViews::EndSetClipRegion(MiniView &miniView, RECT rcClip)

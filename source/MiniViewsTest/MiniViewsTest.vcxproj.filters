@@ -16,5 +16,11 @@
     <ClCompile Include="VersionTest.cpp">
       <Filter>Source Files\%2a</Filter>
     </ClCompile>
+    <ClCompile Include="ZerocmpTest.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

@@ -18,6 +18,10 @@ class Preferences
         RegistryBool DefaultHideWhenSourceOnTop;
         RegistryBool DefaultClickableWhenOpaque;
 
+        RegistryBool UseCachedImageWhenFrozen;
+        RegistryBool ShowFrozenIndicatorIcon;
+        RegistryBool ShowFrozenContextMenuItem;
+
         bool IsFirstRun();
         bool SetNotFirstRun();
 
