@@ -19,7 +19,7 @@ enum class Id : int
 	CheckHideWhenSourceOnTop
 };
 
-bool ViewsWindow::CreateThis(HWND hParent, u64 windowId)
+bool ViewsWindow::CreateThis(HWND hParent, u64 windowId, int dpi, HFONT font)
 {
 	if ( getHandle() != NULL )
 		return SetParent(hParent);
@@ -28,9 +28,9 @@ bool ViewsWindow::CreateThis(HWND hParent, u64 windowId)
 	if ( GetClientRect(hParent, &rcCli) &&
 		ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "ViewsWindow", NULL, false) &&
 		ClassWindow::CreateClassWindow(NULL, "Views Tab", WS_CHILD,
-			5, 22, rcCli.right - rcCli.left - 5, rcCli.bottom - rcCli.top - 22, hParent, (HMENU)windowId) )
+			DpiScale(5, dpi), DpiScale(22, dpi), rcCli.right - rcCli.left - DpiScale(5, dpi), rcCli.bottom - rcCli.top - DpiScale(22, dpi), hParent, (HMENU)windowId) )
 	{
-		CreateSubWindows();
+		CreateSubWindows(dpi, font);
 		return true;
 	}
 	else
@@ -117,9 +117,9 @@ void ViewsWindow::RefreshWindow(bool rebuildTree, bool refreshNames)
 		DisableEditing();
 }
 
-void ViewsWindow::FixPositions()
+void ViewsWindow::FixPositions(int dpi, HFONT font)
 {
-	treeMiniViews.SetPos(0, 5, 100, cliHeight() - 10);
+	treeMiniViews.SetPos(0, DpiScale(5, dpi), DpiScale(100, dpi), cliHeight() - DpiScale(10, dpi));
 }
 
 void ViewsWindow::EnableEditing()
@@ -189,42 +189,43 @@ void ViewsWindow::DisableEditing()
 	checkHideWhenSourceOnTop.SetCheck(false);
 }
 
-void ViewsWindow::CreateSubWindows()
+void ViewsWindow::CreateSubWindows(int dpi, HFONT font)
 {
-	treeMiniViews.CreateThis(getHandle(), 0, 5, 100, cliHeight() - 10, false, 0);
+	WindowsItem::SetFont(font, false);
+	treeMiniViews.CreateThis(getHandle(), 0, DpiScale(5, dpi), DpiScale(100, dpi), cliHeight() - DpiScale(10, dpi), false, 0);
 
-	groupSize.CreateThis(getHandle(), treeMiniViews.Right() + 5, 5, 145, 179, "Window Settings", 0);
-	textWindowXc.CreateThis(getHandle(), groupSize.Left() + 10, groupSize.Top() + 20, 45, 23, "X-Pos: ", 0);
-	textWindowYc.CreateThis(getHandle(), groupSize.Left() + 10, textWindowXc.Bottom() + 2, 45, 23, "Y-Pos: ", 0);
-	textWindowWidth.CreateThis(getHandle(), groupSize.Left() + 10, textWindowYc.Bottom() + 2, 45, 23, "Width: ", 0);
-	textWindowHeight.CreateThis(getHandle(), groupSize.Left() + 10, textWindowWidth.Bottom() + 2, 45, 23, "Height: ", 0);
-	editWindowXc.CreateThis(getHandle(), textWindowXc.Right() + 10, textWindowXc.Top() - 3, 50, 23, false, (u32)Id::EditWindowXPos);
-	editWindowYc.CreateThis(getHandle(), textWindowYc.Right() + 10, textWindowYc.Top() - 3, 50, 23, false, (u32)Id::EditWindowYPos);
-	editWindowWidth.CreateThis(getHandle(), textWindowWidth.Right() + 10, textWindowWidth.Top() - 3,
-		50, 23, false, (u32)Id::EditWindowWidth);
-	editWindowHeight.CreateThis(getHandle(), textWindowHeight.Right() + 10, textWindowHeight.Top() - 3,
-		50, 23, false, (u32)Id::EditWindowHeight);
-	buttonMatchSourcePos.CreateThis(getHandle(), groupSize.Left() + 10, editWindowHeight.Bottom() + 5,
-		125, 23, "Match Source Position", (u32)Id::ButtonMatchSourcePos);
-	buttonMatchSourceSize.CreateThis(getHandle(), groupSize.Left() + 10, buttonMatchSourcePos.Bottom() + 5,
-		125, 23, "Match Source Size", (u32)Id::ButtonMatchSourceSize);
+	groupSize.CreateThis(getHandle(), treeMiniViews.Right() + DpiScale(5, dpi), DpiScale(5, dpi), DpiScale(145, dpi), DpiScale(179, dpi), "Window Settings", 0);
+	textWindowXc.CreateThis(getHandle(), groupSize.Left() + DpiScale(10, dpi), groupSize.Top() + DpiScale(20, dpi), DpiScale(45, dpi), DpiScale(23, dpi), "X-Pos: ", 0);
+	textWindowYc.CreateThis(getHandle(), groupSize.Left() + DpiScale(10, dpi), textWindowXc.Bottom() + DpiScale(2, dpi), DpiScale(45, dpi), DpiScale(23, dpi), "Y-Pos: ", 0);
+	textWindowWidth.CreateThis(getHandle(), groupSize.Left() + DpiScale(10, dpi), textWindowYc.Bottom() + DpiScale(2, dpi), DpiScale(45, dpi), DpiScale(23, dpi), "Width: ", 0);
+	textWindowHeight.CreateThis(getHandle(), groupSize.Left() + DpiScale(10, dpi), textWindowWidth.Bottom() + DpiScale(2, dpi), DpiScale(45, dpi), DpiScale(23, dpi), "Height: ", 0);
+	editWindowXc.CreateThis(getHandle(), textWindowXc.Right() + DpiScale(10, dpi), textWindowXc.Top() - DpiScale(3, dpi), DpiScale(50, dpi), DpiScale(23, dpi), false, (u32)Id::EditWindowXPos);
+	editWindowYc.CreateThis(getHandle(), textWindowYc.Right() + DpiScale(10, dpi), textWindowYc.Top() - DpiScale(3, dpi), DpiScale(50, dpi), DpiScale(23, dpi), false, (u32)Id::EditWindowYPos);
+	editWindowWidth.CreateThis(getHandle(), textWindowWidth.Right() + DpiScale(10, dpi), textWindowWidth.Top() - DpiScale(3, dpi),
+		DpiScale(50, dpi), DpiScale(23, dpi), false, (u32)Id::EditWindowWidth);
+	editWindowHeight.CreateThis(getHandle(), textWindowHeight.Right() + DpiScale(10, dpi), textWindowHeight.Top() - DpiScale(3, dpi),
+		DpiScale(50, dpi), DpiScale(23, dpi), false, (u32)Id::EditWindowHeight);
+	buttonMatchSourcePos.CreateThis(getHandle(), groupSize.Left() + DpiScale(10, dpi), editWindowHeight.Bottom() + DpiScale(5, dpi),
+		DpiScale(125, dpi), DpiScale(23, dpi), "Match Source Position", (u32)Id::ButtonMatchSourcePos);
+	buttonMatchSourceSize.CreateThis(getHandle(), groupSize.Left() + DpiScale(10, dpi), buttonMatchSourcePos.Bottom() + DpiScale(5, dpi),
+		DpiScale(125, dpi), DpiScale(23, dpi), "Match Source Size", (u32)Id::ButtonMatchSourceSize);
 
-	groupClip.CreateThis(getHandle(), treeMiniViews.Right() + 5, groupSize.Bottom() + 5, 145, 155, "Clip Settings", 0);
-	checkClipped.CreateThis(getHandle(), groupClip.Left() + 10, groupClip.Top() + 20, 55, 23, false, "Clipped", (u32)Id::CheckClipped);
-	textClipLeft.CreateThis(getHandle(), groupClip.Left() + 10, checkClipped.Bottom() + 10, 40, 23, "Left: ", 0);
-	textClipTop.CreateThis(getHandle(), groupClip.Left() + 10, textClipLeft.Bottom() + 2, 40, 23, "Top: ", 0);
-	textClipRight.CreateThis(getHandle(), groupClip.Left() + 10, textClipTop.Bottom() + 2, 40, 23, "Right: ", 0);
-	textClipBottom.CreateThis(getHandle(), groupClip.Left() + 10, textClipRight.Bottom() + 2, 40, 23, "Bottom: ", 0);
-	editClipLeft.CreateThis(getHandle(), textClipLeft.Right() + 10, textClipLeft.Top() - 3, 50, 23, false, (u32)Id::EditClipLeft);
-	editClipTop.CreateThis(getHandle(), textClipTop.Right() + 10, textClipTop.Top() - 3, 50, 23, false, (u32)Id::EditClipTop);
-	editClipRight.CreateThis(getHandle(), textClipRight.Right() + 10, textClipRight.Top() - 3, 50, 23, false, (u32)Id::EditClipRight);
-	editClipBottom.CreateThis(getHandle(), textClipBottom.Right() + 10, textClipBottom.Top() - 3, 50, 23, false, (u32)Id::EditClipBottom);
-	buttonSetClip.CreateThis(getHandle(), editClipLeft.Right() - 30, groupClip.Top() + 20, 30, 23, "Set", (u32)Id::ButtonSetClipArea);
+	groupClip.CreateThis(getHandle(), treeMiniViews.Right() + DpiScale(5, dpi), groupSize.Bottom() + DpiScale(5, dpi), DpiScale(145, dpi), DpiScale(155, dpi), "Clip Settings", 0);
+	checkClipped.CreateThis(getHandle(), groupClip.Left() + DpiScale(10, dpi), groupClip.Top() + DpiScale(20, dpi), DpiScale(55, dpi), DpiScale(23, dpi), false, "Clipped", (u32)Id::CheckClipped);
+	textClipLeft.CreateThis(getHandle(), groupClip.Left() + DpiScale(10, dpi), checkClipped.Bottom() + DpiScale(10, dpi), DpiScale(40, dpi), DpiScale(23, dpi), "Left: ", 0);
+	textClipTop.CreateThis(getHandle(), groupClip.Left() + DpiScale(10, dpi), textClipLeft.Bottom() + DpiScale(2, dpi), DpiScale(40, dpi), DpiScale(23, dpi), "Top: ", 0);
+	textClipRight.CreateThis(getHandle(), groupClip.Left() + DpiScale(10, dpi), textClipTop.Bottom() + DpiScale(2, dpi), DpiScale(40, dpi), DpiScale(23, dpi), "Right: ", 0);
+	textClipBottom.CreateThis(getHandle(), groupClip.Left() + DpiScale(10, dpi), textClipRight.Bottom() + DpiScale(2, dpi), DpiScale(40, dpi), DpiScale(23, dpi), "Bottom: ", 0);
+	editClipLeft.CreateThis(getHandle(), textClipLeft.Right() + DpiScale(10, dpi), textClipLeft.Top() - DpiScale(3, dpi), DpiScale(50, dpi), DpiScale(23, dpi), false, (u32)Id::EditClipLeft);
+	editClipTop.CreateThis(getHandle(), textClipTop.Right() + DpiScale(10, dpi), textClipTop.Top() - DpiScale(3, dpi), DpiScale(50, dpi), DpiScale(23, dpi), false, (u32)Id::EditClipTop);
+	editClipRight.CreateThis(getHandle(), textClipRight.Right() + DpiScale(10, dpi), textClipRight.Top() - DpiScale(3, dpi), DpiScale(50, dpi), DpiScale(23, dpi), false, (u32)Id::EditClipRight);
+	editClipBottom.CreateThis(getHandle(), textClipBottom.Right() + DpiScale(10, dpi), textClipBottom.Top() - DpiScale(3, dpi), DpiScale(50, dpi), DpiScale(23, dpi), false, (u32)Id::EditClipBottom);
+	buttonSetClip.CreateThis(getHandle(), editClipLeft.Right() - DpiScale(30, dpi), groupClip.Top() + DpiScale(20, dpi), DpiScale(30, dpi), DpiScale(23, dpi), "Set", (u32)Id::ButtonSetClipArea);
 
-	checkLockSizeRatio.CreateThis(getHandle(), treeMiniViews.Right() + 5, groupClip.Bottom() + 5,
-		150, 23, false, "Lock Size Ratio", (u32)Id::CheckLockSizeRatio);
-	checkHideWhenSourceOnTop.CreateThis(getHandle(), treeMiniViews.Right() + 5, checkLockSizeRatio.Bottom() + 2,
-		150, 23, false, "Hide When Source On Top", (u32)Id::CheckHideWhenSourceOnTop);
+	checkLockSizeRatio.CreateThis(getHandle(), treeMiniViews.Right() + DpiScale(5, dpi), groupClip.Bottom() + DpiScale(5, dpi),
+		DpiScale(150, dpi), DpiScale(23, dpi), false, "Lock Size Ratio", (u32)Id::CheckLockSizeRatio);
+	checkHideWhenSourceOnTop.CreateThis(getHandle(), treeMiniViews.Right() + DpiScale(5, dpi), checkLockSizeRatio.Bottom() + DpiScale(2, dpi),
+		DpiScale(150, dpi), DpiScale(23, dpi), false, "Hide When Source On Top", (u32)Id::CheckHideWhenSourceOnTop);
 }
 
 void ViewsWindow::NotifyTreeSelChanged(LPARAM newValue)

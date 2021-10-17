@@ -9,7 +9,7 @@ enum class Id : int
     ButtonManual
 };
 
-bool AboutWindow::CreateThis(HWND hParent, u64 windowId)
+bool AboutWindow::CreateThis(HWND hParent, u64 windowId, int dpi, HFONT font)
 {
     if ( getHandle() != NULL )
         return SetParent(hParent);
@@ -18,9 +18,9 @@ bool AboutWindow::CreateThis(HWND hParent, u64 windowId)
     if ( GetClientRect(hParent, &rcCli) &&
         ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "AboutWindow", NULL, false) &&
         ClassWindow::CreateClassWindow(NULL, "About Tab", WS_CHILD,
-            5, 22, rcCli.right - rcCli.left - 5, rcCli.bottom - rcCli.top - 22, hParent, (HMENU)windowId) )
+            DpiScale(5, dpi), DpiScale(22, dpi), rcCli.right - rcCli.left - DpiScale(5, dpi), rcCli.bottom - rcCli.top - DpiScale(22, dpi), hParent, (HMENU)windowId) )
     {
-        CreateSubWindows();
+        CreateSubWindows(dpi, font);
         return true;
     }
     else
@@ -38,21 +38,22 @@ void AboutWindow::RefreshWindow()
 
 }
 
-void AboutWindow::FixPositions()
+void AboutWindow::FixPositions(int dpi, HFONT font)
 {
 
 }
 
-void AboutWindow::CreateSubWindows()
+void AboutWindow::CreateSubWindows(int dpi, HFONT font)
 {
-    int padding = 5;
-    buttonWebsite.CreateThis(getHandle(), 0, 5, 100, 23, "Website", (u32)Id::ButtonWebsite);
-    buttonManual.CreateThis(getHandle(), 0, buttonWebsite.Bottom() + padding, 100, 23, "Manual", (u32)Id::ButtonManual);
+	WindowsItem::SetFont(font, false);
+    int padding = DpiScale(5, dpi);
+    buttonWebsite.CreateThis(getHandle(), 0, DpiScale(5, dpi), DpiScale(100, dpi), DpiScale(23, dpi), "Website", (u32)Id::ButtonWebsite);
+    buttonManual.CreateThis(getHandle(), 0, buttonWebsite.Bottom() + padding, DpiScale(100, dpi), DpiScale(23, dpi), "Manual", (u32)Id::ButtonManual);
 
     WinLib::TextControl textCopyright, textVersion;
-    textCopyright.CreateThis(getHandle(), 5, cliHeight() - 30, cliWidth() - 10, 20,
+    textCopyright.CreateThis(getHandle(), DpiScale(5, dpi), cliHeight() - DpiScale(30, dpi), cliWidth() - DpiScale(10, dpi), DpiScale(20, dpi),
         "All rights reserved (c) 2016 Justin Forsberg.", 0);
-    textVersion.CreateThis(getHandle(), 5, textCopyright.Top() - 25, cliWidth() - 10, 20,
+    textVersion.CreateThis(getHandle(), DpiScale(5, dpi), textCopyright.Top() - DpiScale(25, dpi), cliWidth() - DpiScale(10, dpi), DpiScale(20, dpi),
         std::string("Full Version ID: " + GetFullVersionString()).c_str(), 0);
 }
 

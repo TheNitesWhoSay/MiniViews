@@ -27,11 +27,12 @@ class MainDialog : public WinLib::ClassWindow
 
 	protected:
 
-		void FixPositions();
+		void FixPositions(int dpi);
 		void ProcessClose();
-		void CreateSubWindows();
+		void CreateSubWindows(int dpi);
 		void TabSelChange();
 		void TabSelChanging();
+		void DpiChanged(int dpi, RECT* newRect);
 		LRESULT SysCommand(HWND hWnd, WPARAM wParam, LPARAM lParam);
 		LRESULT Notify(HWND hWnd, WPARAM idFrom, NMHDR* nmhdr);
 		LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -41,6 +42,7 @@ class MainDialog : public WinLib::ClassWindow
 
 		WinLib::TabControl tabs;
 
+		int dpi;
 		int windowLeft, windowTop;
 		enum class TabId : u32 { GeneralTab = 0, ViewsTab, AdvancedTab, AboutTab };
 		TabId selectedTab;

@@ -10,6 +10,10 @@
 #include <algorithm>
 #include <SimpleIcu.h>
 
+static constexpr int DefaultDpi = 96;
+
+static inline int DpiScale(int coordinate, int dpi) { return MulDiv(coordinate, dpi, DefaultDpi); }
+
 namespace WinLib {
 
     class WindowControl : public WindowsItem
