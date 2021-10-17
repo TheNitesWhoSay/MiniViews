@@ -1,0 +1,128 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\MainDialog">
+      <UniqueIdentifier>{19f41b52-b23a-4f0e-8c0a-44fa9f75ae2f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\MainDialog">
+      <UniqueIdentifier>{048e9e7c-36cc-4ae6-89ca-9bb139301e0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\%2a">
+      <UniqueIdentifier>{c26b802b-9ac6-4208-b8be-8821b6de1db1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\%2a">
+      <UniqueIdentifier>{f128fda8-8c6f-44c0-a2ea-007db9c1e833}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MainDialog\AboutTab.cpp">
+      <Filter>Source Files\MainDialog</Filter>
+    </ClCompile>
+    <ClCompile Include="MainDialog\AdvancedTab.cpp">
+      <Filter>Source Files\MainDialog</Filter>
+    </ClCompile>
+    <ClCompile Include="MainDialog\GeneralTab.cpp">
+      <Filter>Source Files\MainDialog</Filter>
+    </ClCompile>
+    <ClCompile Include="MainDialog\MainDialog.cpp">
+      <Filter>Source Files\MainDialog</Filter>
+    </ClCompile>
+    <ClCompile Include="MainDialog\ViewsTab.cpp">
+      <Filter>Source Files\MainDialog</Filter>
+    </ClCompile>
+    <ClCompile Include="ClipSel.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="MiniView.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="MiniViews.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="Preferences.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="RegistryTypes.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="Updater.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="Version.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="Zerocmp.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="WinrtGraphicsCapture.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+    <ClCompile Include="Math.cpp">
+      <Filter>Source Files\%2a</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MainDialog\AboutTab.h">
+      <Filter>Header Files\MainDialog</Filter>
+    </ClInclude>
+    <ClInclude Include="MainDialog\AdvancedTab.h">
+      <Filter>Header Files\MainDialog</Filter>
+    </ClInclude>
+    <ClInclude Include="MainDialog\GeneralTab.h">
+      <Filter>Header Files\MainDialog</Filter>
+    </ClInclude>
+    <ClInclude Include="MainDialog\MainDialog.h">
+      <Filter>Header Files\MainDialog</Filter>
+    </ClInclude>
+    <ClInclude Include="MainDialog\ViewsTab.h">
+      <Filter>Header Files\MainDialog</Filter>
+    </ClInclude>
+    <ClInclude Include="CLI.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="ClipSel.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="MiniView.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="MiniViews.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Preferences.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="RegistryTypes.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Updater.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Version.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Zerocmp.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="WinrtGraphicsCapture.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+    <ClInclude Include="Math.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+</Project>
