@@ -64,7 +64,7 @@ int MiniViews::Run(int showCommand)
 	if ( !EnsureOnlyInstance() )
 		return 1;
 
-	WinrtGraphics::InitializeGraphicsCaptureApplication(true);
+	WinrtGraphics::InitializeGraphicsCaptureApplication();
 
 	if ( !CreateThis() )
 		return CriticalError(2, "Window creation failed.");

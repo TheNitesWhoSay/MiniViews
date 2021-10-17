@@ -23,7 +23,7 @@ namespace WinrtGraphics
         DispatcherQueueInitializationFailed
     };
 
-    InitializerResult InitializeGraphicsCaptureApplication(bool dpiAware = false);
+    InitializerResult InitializeGraphicsCaptureApplication();
 
     struct CaptureSource // Represents a source from which you're capturing graphics
     {
