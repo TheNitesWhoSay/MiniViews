@@ -2,7 +2,6 @@
 #include "Preferences.h"
 #include "Resource.h"
 #include "Version.h"
-#include <ShellScalingApi.h>
 
 enum class Msg : UINT
 {

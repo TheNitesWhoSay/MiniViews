@@ -13,8 +13,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
-#include <fstream>
-#include <string>
+#include <ShellScalingApi.h>
 
 namespace WinrtGraphics
 {
@@ -27,7 +26,8 @@ namespace WinrtGraphics
     InitializerResult InitializeGraphicsCaptureApplication(bool dpiAware)
     {
         if ( dpiAware )
-            SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+	        SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+            //SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
         winrt::init_apartment(); // Initialize COM and thread in windows runtime in a multithreaded apartment
 
@@ -139,19 +139,25 @@ namespace WinrtGraphics
         {
             return this->width > 0 && this->height > 0 && this->pixels != nullptr;
         }
+        
+        /* Example use:
+        
+            #include <ofstream>
+            #include <string>
 
-        static bool captureFrameToFile(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFrame & frame, const std::string & outFilePath) // example use
-        {
-            PixelData data(frame);
-            if ( data )
+            static bool captureFrameToFile(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFrame & frame, const std::string & outFilePath)
             {
-                std::ofstream out(outFilePath.c_str(), std::ios_base::out|std::ios_base::binary);
-                out.write((const char*)&data.pixels[0], data.width*data.height*4);
-                out.close();
-                return true;
+                PixelData data(frame);
+                if ( data )
+                {
+                    //std::ofstream out(outFilePath.c_str(), std::ios_base::out|std::ios_base::binary);
+                    //out.write((const char*)&data.pixels[0], data.width*data.height*4);
+                    //out.close();
+                    return true;
+                }
+                return false;
             }
-            return false;
-        }
+        */
     };
 
     CaptureSource::CaptureSource(FrameArrivedHandler frameArrivedHandler, SourceWindowClosedHandler sourceWindowClosedHandler,
@@ -217,18 +223,19 @@ namespace WinrtGraphics
         auto captureFactory = winrt::get_activation_factory<winrt::Windows::Graphics::Capture::GraphicsCaptureItem, IGraphicsCaptureItemInterop>();
         try
         {
+            this->hSource = sourceWindow;
             winrt::check_hresult(captureFactory->CreateForWindow(
-                sourceWindow, winrt::guid_of<ABI::Windows::Graphics::Capture::IGraphicsCaptureItem>(), winrt::put_abi(captureItem)));
+                this->hSource, winrt::guid_of<ABI::Windows::Graphics::Capture::IGraphicsCaptureItem>(), winrt::put_abi(captureItem)));
         }
         catch ( const winrt::hresult_invalid_argument & invalidArg )
         {
-            HWND rootSourceWindow = GetAncestor(sourceWindow, GA_ROOT);
-            if ( rootSourceWindow != NULL && sourceWindow != rootSourceWindow ) // Try again from root window
+            HWND rootSourceWindow = GetAncestor(this->hSource, GA_ROOT);
+            if ( rootSourceWindow != NULL && this->hSource != rootSourceWindow ) // Try again from root window
             {
                 winrt::check_hresult(captureFactory->CreateForWindow(
                     rootSourceWindow, winrt::guid_of<ABI::Windows::Graphics::Capture::IGraphicsCaptureItem>(), winrt::put_abi(captureItem)));
 
-                sourceWindow = rootSourceWindow;
+                this->hSource = rootSourceWindow;
             }
             else
                 throw invalidArg;
@@ -243,7 +250,8 @@ namespace WinrtGraphics
         this->pixelFormat = pixelFormat;
         this->bufferCount = bufferCount;
 
-        createMirrorCasing(hParent);
+        this->hParent = hParent;
+        createMirrorCasing();
 
         auto d3dDeviceInterface = CaptureSource::GetD3dDeviceInterface();
         d3dDeviceInterface->GetImmediateContext(this->d3dContext.put());
@@ -274,34 +282,42 @@ namespace WinrtGraphics
         winrt::check_hresult(compositionSurface->QueryInterface(
             winrt::guid_of<winrt::Windows::UI::Composition::ICompositionSurface>(), winrt::put_abi(surface)));
         this->compositionSurfaceBrush.Surface(surface);
-        return sourceWindow;
+        return this->hSource;
     }
     
-    void Mirror::setClip(UINT sourceClipLeft, UINT sourceClipTop, UINT sourceClipRight, UINT sourceClipBottom, LONG destWidth, LONG destHeight)
+    void Mirror::handleSourceSizeChange(LONG sourceWidth, LONG sourceHeight)
     {
-        this->sourceClipRegion.left = sourceClipLeft;
-        this->sourceClipRegion.top = sourceClipTop;
-        this->sourceClipRegion.front = 0;
-        this->sourceClipRegion.right = sourceClipRight;
-        this->sourceClipRegion.bottom = sourceClipBottom;
-        this->sourceClipRegion.back = 1;
-        UINT sourceClipWidth = sourceClipRight - sourceClipLeft;
-        UINT sourceClipHeight = sourceClipBottom - sourceClipTop;
-        
-        if ( this->containerVisual )
-        {
-            this->containerVisual.Offset({0, 0, 0});
-            this->containerVisual.RelativeSizeAdjustment({ 1.0f, 1.0f });
-        }
+        LONG sourceClipLeft = this->gdiClipRegion.left;
+        LONG sourceClipTop = this->gdiClipRegion.top;
+        LONG sourceClipRight = this->gdiClipRegion.right;
+        LONG sourceClipBottom = this->gdiClipRegion.bottom;
 
-        if ( this->spriteVisual )
-        {
-            this->spriteVisual.RelativeSizeAdjustment({ 0.0f, 0.0f });
-            this->spriteVisual.Offset({0, 0, 0});
-            this->spriteVisual.Size({
-                float(RoundedQuotient(this->size.Width*destWidth, sourceClipWidth)),
-                float(RoundedQuotient(this->size.Height*destHeight, sourceClipHeight))});
-        }
+        this->gdiSourceSize.cx = sourceWidth;
+        this->gdiSourceSize.cy = sourceHeight;
+        this->frameClipRegionInvalid = true;
+
+		this->createMirror(hParent, hSource);
+        this->setClip(sourceClipLeft, sourceClipTop, sourceClipRight, sourceClipBottom, sourceWidth, sourceHeight);
+    }
+
+    void Mirror::setClip(LONG sourceClipLeft, LONG sourceClipTop, LONG sourceClipRight, LONG sourceClipBottom, LONG sourceWidth, LONG sourceHeight)
+    {
+        this->gdiSourceSize.cx = sourceWidth;
+        this->gdiSourceSize.cy = sourceHeight;
+
+        this->frameClipRegion.left = 0;
+        this->frameClipRegion.top = 0;
+        this->frameClipRegion.front = 0;
+        this->frameClipRegion.right = 0;
+        this->frameClipRegion.bottom = 0;
+        this->frameClipRegion.back = 1;
+
+        this->frameClipRegionInvalid = true;
+
+        this->gdiClipRegion.left = sourceClipLeft;
+        this->gdiClipRegion.top = sourceClipTop;
+        this->gdiClipRegion.right = sourceClipRight;
+        this->gdiClipRegion.bottom = sourceClipBottom;
 
         this->clipped = true;
     }
@@ -309,13 +325,19 @@ namespace WinrtGraphics
     void Mirror::clearClip()
     {
         this->clipped = false;
+        this->frameClipRegionInvalid = true;
 
-        this->sourceClipRegion.left = 0;
-        this->sourceClipRegion.top = 0;
-        this->sourceClipRegion.front = 0;
-        this->sourceClipRegion.right = 0;
-        this->sourceClipRegion.bottom = 0;
-        this->sourceClipRegion.back = 1;
+        this->frameClipRegion.left = 0;
+        this->frameClipRegion.top = 0;
+        this->frameClipRegion.front = 0;
+        this->frameClipRegion.right = 0;
+        this->frameClipRegion.bottom = 0;
+        this->frameClipRegion.back = 1;
+
+        this->gdiClipRegion.left = 0;
+        this->gdiClipRegion.top = 0;
+        this->gdiClipRegion.right = 0;
+        this->gdiClipRegion.bottom = 0;
 
         if ( this->spriteVisual )
         {
@@ -342,7 +364,7 @@ namespace WinrtGraphics
         this->desktopWindowTarget = { nullptr };
     }
 
-    void Mirror::createMirrorCasing(HWND hParent)
+    void Mirror::createMirrorCasing()
     {
         this->compositor = winrt::Windows::UI::Composition::Compositor();
 
@@ -354,12 +376,14 @@ namespace WinrtGraphics
 
         this->compositionSurfaceBrush = this->compositor.CreateSurfaceBrush();
         this->compositionSurfaceBrush.Stretch(winrt::Windows::UI::Composition::CompositionStretch::Uniform);
+        this->compositionSurfaceBrush.HorizontalAlignmentRatio(0.5f);
+        this->compositionSurfaceBrush.VerticalAlignmentRatio(0.5f);
 
         this->spriteVisual.Brush(this->compositionSurfaceBrush);
         this->containerVisual.Children().InsertAtTop(this->spriteVisual);
 
         auto compositorDesktopInterop = this->compositor.as<ABI::Windows::UI::Composition::Desktop::ICompositorDesktopInterop>();
-        winrt::check_hresult(compositorDesktopInterop->CreateDesktopWindowTarget(hParent, true,
+        winrt::check_hresult(compositorDesktopInterop->CreateDesktopWindowTarget(this->hParent, true,
             reinterpret_cast<ABI::Windows::UI::Composition::Desktop::IDesktopWindowTarget**>(winrt::put_abi(this->desktopWindowTarget))));
         this->desktopWindowTarget.Root(this->containerVisual);
     }
@@ -374,7 +398,7 @@ namespace WinrtGraphics
         winrt::check_hresult(this->swapChain->GetBuffer(0, winrt::guid_of<ID3D11Texture2D>(), backBuffer.put_void())); // Get back buffer from swapChain
 
         if ( this->clipped )
-            this->d3dContext->CopySubresourceRegion(backBuffer.get(), 0, 0, 0, 0, sourceTexture.get(), 0, &sourceClipRegion); // Copy clipped texture to back buffer
+            this->d3dContext->CopySubresourceRegion(backBuffer.get(), 0, 0, 0, 0, sourceTexture.get(), 0, &this->frameClipRegion);
         else
             this->d3dContext->CopyResource(backBuffer.get(), sourceTexture.get()); // Copy surfaceTexture to the swap chain back buffer from source
     }
@@ -389,11 +413,11 @@ namespace WinrtGraphics
     void Mirror::frameArrived(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool & framePool, const winrt::Windows::Foundation::IInspectable &)
     {
         winrt::Windows::Graphics::Capture::Direct3D11CaptureFrame frame = framePool.TryGetNextFrame();
-        bool swapChainChanged = updateSize(frame.ContentSize());
+        bool frameSizeChanged = updateSize(frame.ContentSize());
             
         renderFrame(frame);
 
-        if ( swapChainChanged )
+        if ( frameSizeChanged )
             this->graphicsCaptureSource->recreateFramePool(this->size, this->pixelFormat, this->bufferCount);
     }
 
@@ -401,11 +425,43 @@ namespace WinrtGraphics
     {
         reset();
     }
-
-    void Mirror::refreshSwapChain()
+    
+    bool Mirror::updateClip(bool sizeChanged) // Validate, initialize or update clip region as necessary
     {
-        winrt::check_hresult(this->swapChain->ResizeBuffers(
-            this->bufferCount, uint32_t(this->size.Width), uint32_t(this->size.Height), DXGI_FORMAT(this->pixelFormat), 0));
+        if ( sizeChanged || this->frameClipRegionInvalid || // Size changed or frame clip region was uninitialized or otherwise invalidated
+            LONG(this->frameClipRegion.right) >= this->size.Width || LONG(this->frameClipRegion.bottom) >= this->size.Height || // Frame clip out of bounds
+            this->frameClipRegion.left >= this->frameClipRegion.right || this->frameClipRegion.top >= this->frameClipRegion.bottom ) // Coordinate inverted
+        {
+            if ( this->gdiSourceSize.cx > 0 && this->gdiSourceSize.cy > 0 ) // Scale frameClipRegion to match the given gdiClipRegion
+            {
+                this->frameClipRegion.left = this->size.Width * this->gdiClipRegion.left / this->gdiSourceSize.cx;
+                this->frameClipRegion.top = this->size.Height * this->gdiClipRegion.top / this->gdiSourceSize.cy;
+                this->frameClipRegion.right = this->size.Width * this->gdiClipRegion.right / this->gdiSourceSize.cx;
+                this->frameClipRegion.bottom = this->size.Height * this->gdiClipRegion.bottom / this->gdiSourceSize.cy;
+
+                this->frameClipRegionInvalid =
+                    LONG(this->frameClipRegion.right) >= this->size.Width || LONG(this->frameClipRegion.bottom) >= this->size.Height ||
+                    this->frameClipRegion.left >= this->frameClipRegion.right || this->frameClipRegion.top >= this->frameClipRegion.bottom;
+                this->clipped = !this->frameClipRegionInvalid;
+            }
+            else
+                this->clipped = false; // Source dimension was zero, cannot be clipped
+        }
+        return this->clipped;
+    }
+
+    void Mirror::refreshSwapChain(bool sizeChanged)
+    {
+        if ( this->clipped && updateClip(sizeChanged) )
+        {
+            winrt::check_hresult(this->swapChain->ResizeBuffers(
+                this->bufferCount, uint32_t(this->frameClipRegion.right-this->frameClipRegion.left), uint32_t(this->frameClipRegion.bottom-this->frameClipRegion.top), DXGI_FORMAT(this->pixelFormat), 0));
+        }
+        else
+        {
+            winrt::check_hresult(this->swapChain->ResizeBuffers(
+                this->bufferCount, uint32_t(this->size.Width), uint32_t(this->size.Height), DXGI_FORMAT(this->pixelFormat), 0));
+        }
     }
 
     bool Mirror::updateSize(const winrt::Windows::Graphics::SizeInt32 & size)
@@ -414,9 +470,12 @@ namespace WinrtGraphics
         {
             this->size.Width = size.Width;
             this->size.Height = size.Height;
-            refreshSwapChain();
+            refreshSwapChain(true);
             return true;
         }
+        else if ( this->clipped )
+            updateClip(false);
+
         return false;
     }
 
@@ -425,7 +484,7 @@ namespace WinrtGraphics
         if ( pixelFormat != this->pixelFormat )
         {
             this->pixelFormat = pixelFormat;
-            refreshSwapChain();
+            refreshSwapChain(false);
             return true;
         }
         return false;

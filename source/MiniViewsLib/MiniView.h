@@ -164,6 +164,7 @@ class MiniView : public WinLib::ClassWindow
 		HBRUSH blackBrush;
 		IMiniViewUser* user;
 		std::unique_ptr<WinGdiImage> winGdiImageCache;
+		SIZE sourceSize;
 
 		static const int minimumDimension; // The minimum width and height of the MiniView
 		static const DWORD constantStyles; // Styles always applied to the window

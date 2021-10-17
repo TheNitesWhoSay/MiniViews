@@ -2,7 +2,6 @@
 #include "Resource.h"
 #include "Preferences.h"
 #include <cstdlib>
-#include <ShellScalingApi.h>
 #include <optional>
 #include "Zerocmp.h"
 #include "Math.h"
@@ -132,9 +131,12 @@ void MiniView::SetClip(bool isClipped, int left, int top, int right, int bottom)
         }
 
 		FixRatio();
-		int wDest = internallyClipped ? rcInternalClip.right - rcInternalClip.left : WindowsItem::cliWidth(),
-			hDest = internallyClipped ? rcInternalClip.bottom - rcInternalClip.top : WindowsItem::cliHeight();
-        this->graphicsCaptureMirror.setClip(UINT(rcClip.left), UINT(rcClip.top), UINT(rcClip.right), UINT(rcClip.bottom), wDest, hDest);
+		
+		RECT sourceClientRect = {};
+		::GetClientRect(hSource, &sourceClientRect);
+		LONG wSrc = sourceClientRect.right - sourceClientRect.left,
+		     hSrc = sourceClientRect.bottom - sourceClientRect.top;
+        this->graphicsCaptureMirror.setClip(rcClip.left, rcClip.top, rcClip.right, rcClip.bottom, wSrc, hSrc);
 	}
 }
 
@@ -315,7 +317,20 @@ void MiniView::ValidateProperties()
 	else
 	{
 		CheckHideBySourceOnTop();
-		FixRatio();
+		
+		RECT rcSource;
+		::GetClientRect(this->hSource, &rcSource);
+		LONG sourceWidth = rcSource.right-rcSource.left;
+		LONG sourceHeight = rcSource.bottom-rcSource.top;
+		if ( this->sourceSize.cx != sourceWidth || this->sourceSize.cy != sourceHeight ) // Source window size changed
+		{
+			this->sourceSize.cx = sourceWidth;
+			this->sourceSize.cy = sourceHeight;
+
+			FixRatio();
+			if ( this->isGraphicsCaptureCompatible )
+				this->graphicsCaptureMirror.handleSourceSizeChange(sourceWidth, sourceHeight);
+		}
 	}
 }
 
@@ -446,13 +461,14 @@ void MiniView::MatchSource(bool matchPos, bool matchSize)
             lastUserSetCliWidth = cliWidth();
             lastUserSetCliHeight = cliHeight();
         }
-	}
 
-	if ( this->clipped )
-	{
-		int wDest = internallyClipped ? rcInternalClip.right - rcInternalClip.left : WindowsItem::cliWidth(),
-			hDest = internallyClipped ? rcInternalClip.bottom - rcInternalClip.top : WindowsItem::cliHeight();
-        this->graphicsCaptureMirror.setClip(UINT(rcClip.left), UINT(rcClip.top), UINT(rcClip.right), UINT(rcClip.bottom), wDest, hDest);
+		if ( this->clipped )
+		{
+			LONG wSrc = sourceClientRect.right - sourceClientRect.left,
+				 hSrc = sourceClientRect.bottom - sourceClientRect.top;
+			this->graphicsCaptureMirror.createMirror(WindowsItem::getHandle(), hSource);
+			this->graphicsCaptureMirror.setClip(rcClip.left, rcClip.top, rcClip.right, rcClip.bottom, wSrc, hSrc);
+		}
 	}
 }
 
@@ -705,9 +721,11 @@ void MiniView::DoSizing(WPARAM wParam, RECT* rect)
 	
 	if ( this->clipped )
 	{
-		int wDest = internallyClipped ? rcInternalClip.right - rcInternalClip.left : WindowsItem::cliWidth(),
-			hDest = internallyClipped ? rcInternalClip.bottom - rcInternalClip.top : WindowsItem::cliHeight();
-        this->graphicsCaptureMirror.setClip(UINT(rcClip.left), UINT(rcClip.top), UINT(rcClip.right), UINT(rcClip.bottom), wDest, hDest);
+		RECT sourceClientRect = {};
+		::GetClientRect(hSource, &sourceClientRect);
+		LONG wSrc = sourceClientRect.right - sourceClientRect.left,
+			 hSrc = sourceClientRect.bottom - sourceClientRect.top;
+        this->graphicsCaptureMirror.setClip(rcClip.left, rcClip.top, rcClip.right, rcClip.bottom, wSrc, hSrc);
 	}
 }
 
@@ -783,6 +801,8 @@ void MiniView::WindowDropped()
 
         this->SetSourceHandle(newHandle);
         ::GetClientRect(this->hSource, &rcClip);
+		this->sourceSize.cx = rcClip.right-rcClip.left;
+		this->sourceSize.cy = rcClip.bottom-rcClip.top;
         this->lastUserSetCliWidth = WindowsItem::cliWidth();
         this->lastUserSetCliHeight = WindowsItem::cliHeight();
         this->settingWindow = false;

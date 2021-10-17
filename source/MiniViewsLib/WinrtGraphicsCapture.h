@@ -68,7 +68,9 @@ namespace WinrtGraphics
             winrt::Windows::Graphics::DirectX::DirectXPixelFormat pixelFormat = winrt::Windows::Graphics::DirectX::DirectXPixelFormat::B8G8R8A8UIntNormalized,
             UINT bufferCount = 2);
 
-        void setClip(UINT left, UINT top, UINT right, UINT bottom, LONG destWidth, LONG destHeight);
+        void handleSourceSizeChange(LONG sourceWidth, LONG sourceHeight);
+
+        void setClip(LONG left, LONG top, LONG right, LONG bottom, LONG sourceWidth, LONG sourceHeight);
 
         void clearClip();
 
@@ -76,7 +78,7 @@ namespace WinrtGraphics
 
     private:
 
-        void createMirrorCasing(HWND hParent);
+        void createMirrorCasing();
 
         void copyFrame(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFrame & frame);
 
@@ -86,12 +88,16 @@ namespace WinrtGraphics
 
         void sourceClosed(const winrt::Windows::Graphics::Capture::GraphicsCaptureItem &, const winrt::Windows::Foundation::IInspectable &);
 
-        void refreshSwapChain();
+        void refreshSwapChain(bool sizeChanged);
+
+        bool updateClip(bool sizeChanged);
 
         bool updateSize(const winrt::Windows::Graphics::SizeInt32 & size);
 
         bool updatePixelFormat(const winrt::Windows::Graphics::DirectX::DirectXPixelFormat & pixelFormat);
 
+        HWND hParent = NULL;
+        HWND hSource = NULL;
         std::unique_ptr<CaptureSource> graphicsCaptureSource;
 
         winrt::com_ptr<ID3D11DeviceContext> d3dContext{ nullptr }; // A device which generates rendering commands (used to copy between buffers)
@@ -99,8 +105,12 @@ namespace WinrtGraphics
         winrt::Windows::Graphics::SizeInt32 size{}; // Most recently cached width and height of the capture source
         winrt::Windows::Graphics::DirectX::DirectXPixelFormat pixelFormat = winrt::Windows::Graphics::DirectX::DirectXPixelFormat::B8G8R8A8UIntNormalized;
         UINT bufferCount = 0; // Count of buffers in the framePool and swap chain
-        bool clipped = false;
-        D3D11_BOX sourceClipRegion {};
+        
+        bool clipped = false; // Whether clipping is enabled
+        bool frameClipRegionInvalid = true; // If true, frameClipRegion needs to be recalculated prior to use
+        D3D11_BOX frameClipRegion {}; // Clip region applied to graphics capture frames (frame sizes/frame coordinates don't match GDI window sizes/coordinates)
+        RECT gdiClipRegion {}; // Source window clip region in windows GDI coordinates
+        SIZE gdiSourceSize {}; // Source window size in windows GDI coordinates
 
         winrt::Windows::UI::Composition::Compositor compositor{ nullptr }; // Creates and manages visual elements associated with the mirror casing
         winrt::Windows::UI::Composition::ContainerVisual containerVisual{ nullptr }; // A node in a visual tree that can have children
