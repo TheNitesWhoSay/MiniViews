@@ -215,9 +215,61 @@ namespace WinrtGraphics
 
     HWND Mirror::createMirror(HWND hParent, HWND sourceWindow, winrt::Windows::Graphics::DirectX::DirectXPixelFormat pixelFormat, UINT bufferCount)
     {
-        this->clearClip();
+        std::unique_lock<std::mutex> lockWhileCreating(readWriteGuard);
+        return createMirrorNoLock(hParent, sourceWindow, pixelFormat, bufferCount);
+    }
+    
+    void Mirror::handleSourceSizeChange(LONG sourceWidth, LONG sourceHeight)
+    {
+        std::unique_lock<std::mutex> lockWhileAdjusting(readWriteGuard);
+
+        if ( this->clipped )
+        {
+            LONG sourceClipLeft = this->gdiClipRegion.left;
+            LONG sourceClipTop = this->gdiClipRegion.top;
+            LONG sourceClipRight = this->gdiClipRegion.right;
+            LONG sourceClipBottom = this->gdiClipRegion.bottom;
+
+            this->gdiSourceSize.cx = sourceWidth;
+            this->gdiSourceSize.cy = sourceHeight;
+            this->frameClipRegionInvalid = true;
+		    
+            this->setClipNoLock(sourceClipLeft, sourceClipTop, sourceClipRight, sourceClipBottom, sourceWidth, sourceHeight);
+        }
+        else if ( this->clipPaused )
+        {
+            this->clipPaused = false;
+            this->setClipNoLock(this->gdiClipRegion.left, this->gdiClipRegion.top, this->gdiClipRegion.right, this->gdiClipRegion.bottom,
+                sourceWidth, sourceHeight);
+        }
+        else
+		    this->createMirrorNoLock(hParent, hSource);
+    }
+
+    void Mirror::setClip(LONG left, LONG top, LONG right, LONG bottom, LONG sourceWidth, LONG sourceHeight)
+    {
+        std::unique_lock<std::mutex> lockWhileAdjusting(readWriteGuard);
+        setClipNoLock(left, top, right, bottom, sourceWidth, sourceHeight);
+    }
+    
+    void Mirror::clearClip()
+    {
+        std::unique_lock<std::mutex> lockWhileAdjusting(readWriteGuard);
+        clearClipNoLock();
+		this->createMirrorNoLock(hParent, hSource);
+    }
+
+    void Mirror::reset()
+    {
+        std::unique_lock<std::mutex> lockWhileAdjusting(readWriteGuard);
+        resetNoLock();
+    }
+
+    HWND Mirror::createMirrorNoLock(HWND hParent, HWND sourceWindow, winrt::Windows::Graphics::DirectX::DirectXPixelFormat pixelFormat, UINT bufferCount)
+    {
+        this->clearClipNoLock();
         if ( this->graphicsCaptureSource != nullptr )
-            reset();
+            resetNoLock();
 
         winrt::Windows::Graphics::Capture::GraphicsCaptureItem captureItem = { nullptr };
         auto captureFactory = winrt::get_activation_factory<winrt::Windows::Graphics::Capture::GraphicsCaptureItem, IGraphicsCaptureItemInterop>();
@@ -284,24 +336,10 @@ namespace WinrtGraphics
         this->compositionSurfaceBrush.Surface(surface);
         return this->hSource;
     }
-    
-    void Mirror::handleSourceSizeChange(LONG sourceWidth, LONG sourceHeight)
+
+    void Mirror::setClipNoLock(LONG left, LONG top, LONG right, LONG bottom, LONG sourceWidth, LONG sourceHeight)
     {
-        LONG sourceClipLeft = this->gdiClipRegion.left;
-        LONG sourceClipTop = this->gdiClipRegion.top;
-        LONG sourceClipRight = this->gdiClipRegion.right;
-        LONG sourceClipBottom = this->gdiClipRegion.bottom;
-
-        this->gdiSourceSize.cx = sourceWidth;
-        this->gdiSourceSize.cy = sourceHeight;
-        this->frameClipRegionInvalid = true;
-
-		this->createMirror(hParent, hSource);
-        this->setClip(sourceClipLeft, sourceClipTop, sourceClipRight, sourceClipBottom, sourceWidth, sourceHeight);
-    }
-
-    void Mirror::setClip(LONG sourceClipLeft, LONG sourceClipTop, LONG sourceClipRight, LONG sourceClipBottom, LONG sourceWidth, LONG sourceHeight)
-    {
+        this->createMirrorNoLock(hParent, hSource);
         this->gdiSourceSize.cx = sourceWidth;
         this->gdiSourceSize.cy = sourceHeight;
 
@@ -314,15 +352,15 @@ namespace WinrtGraphics
 
         this->frameClipRegionInvalid = true;
 
-        this->gdiClipRegion.left = sourceClipLeft;
-        this->gdiClipRegion.top = sourceClipTop;
-        this->gdiClipRegion.right = sourceClipRight;
-        this->gdiClipRegion.bottom = sourceClipBottom;
+        this->gdiClipRegion.left = left;
+        this->gdiClipRegion.top = top;
+        this->gdiClipRegion.right = right;
+        this->gdiClipRegion.bottom = bottom;
 
         this->clipped = true;
     }
-    
-    void Mirror::clearClip()
+
+    void Mirror::clearClipNoLock()
     {
         this->clipped = false;
         this->frameClipRegionInvalid = true;
@@ -338,17 +376,11 @@ namespace WinrtGraphics
         this->gdiClipRegion.top = 0;
         this->gdiClipRegion.right = 0;
         this->gdiClipRegion.bottom = 0;
-
-        if ( this->spriteVisual )
-        {
-            this->spriteVisual.Size({0.0f, 0.0f});
-            this->spriteVisual.RelativeSizeAdjustment({ 1.0f, 1.0f });
-        }
     }
-
-    void Mirror::reset()
+    
+    void Mirror::resetNoLock()
     {
-        this->clearClip();
+        this->clearClipNoLock();
         this->graphicsCaptureSource = nullptr;
 
         this->d3dContext = { nullptr };
@@ -412,6 +444,7 @@ namespace WinrtGraphics
 
     void Mirror::frameArrived(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFramePool & framePool, const winrt::Windows::Foundation::IInspectable &)
     {
+        std::unique_lock<std::mutex> lockForFrameDuration(readWriteGuard);
         winrt::Windows::Graphics::Capture::Direct3D11CaptureFrame frame = framePool.TryGetNextFrame();
         bool frameSizeChanged = updateSize(frame.ContentSize());
             
@@ -423,7 +456,8 @@ namespace WinrtGraphics
 
     void Mirror::sourceClosed(const winrt::Windows::Graphics::Capture::GraphicsCaptureItem &, const winrt::Windows::Foundation::IInspectable &)
     {
-        reset();
+        std::unique_lock<std::mutex> lockWhileClosing(readWriteGuard);
+        resetNoLock();
     }
     
     bool Mirror::updateClip(bool sizeChanged) // Validate, initialize or update clip region as necessary
@@ -443,6 +477,7 @@ namespace WinrtGraphics
                     LONG(this->frameClipRegion.right) >= this->size.Width || LONG(this->frameClipRegion.bottom) >= this->size.Height ||
                     this->frameClipRegion.left >= this->frameClipRegion.right || this->frameClipRegion.top >= this->frameClipRegion.bottom;
                 this->clipped = !this->frameClipRegionInvalid;
+                this->clipPaused = true;
             }
             else
                 this->clipped = false; // Source dimension was zero, cannot be clipped

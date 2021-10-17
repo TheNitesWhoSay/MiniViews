@@ -12,6 +12,7 @@
 #include <inspectable.h>
 #include <Windows.h>
 #include <memory>
+#include <mutex>
 
 namespace WinrtGraphics
 {
@@ -77,8 +78,17 @@ namespace WinrtGraphics
         void reset();
 
     private:
+        HWND createMirrorNoLock(HWND hParent, HWND sourceWindow,
+            winrt::Windows::Graphics::DirectX::DirectXPixelFormat pixelFormat = winrt::Windows::Graphics::DirectX::DirectXPixelFormat::B8G8R8A8UIntNormalized,
+            UINT bufferCount = 2);
+
+        void setClipNoLock(LONG left, LONG top, LONG right, LONG bottom, LONG sourceWidth, LONG sourceHeight);
+
+        void clearClipNoLock();
 
         void createMirrorCasing();
+
+        void resetNoLock();
 
         void copyFrame(const winrt::Windows::Graphics::Capture::Direct3D11CaptureFrame & frame);
 
@@ -96,9 +106,12 @@ namespace WinrtGraphics
 
         bool updatePixelFormat(const winrt::Windows::Graphics::DirectX::DirectXPixelFormat & pixelFormat);
 
+
         HWND hParent = NULL;
         HWND hSource = NULL;
         std::unique_ptr<CaptureSource> graphicsCaptureSource;
+
+        std::mutex readWriteGuard {}; // Ensures safe read-write access for the different threads
 
         winrt::com_ptr<ID3D11DeviceContext> d3dContext{ nullptr }; // A device which generates rendering commands (used to copy between buffers)
         winrt::com_ptr<IDXGISwapChain1> swapChain{ nullptr }; // Stores rendered data before presenting to output (contains render output method)
@@ -107,6 +120,7 @@ namespace WinrtGraphics
         UINT bufferCount = 0; // Count of buffers in the framePool and swap chain
         
         bool clipped = false; // Whether clipping is enabled
+        bool clipPaused = false; // Whether clipping has been paused, this happens while a clip region is larger than a window
         bool frameClipRegionInvalid = true; // If true, frameClipRegion needs to be recalculated prior to use
         D3D11_BOX frameClipRegion {}; // Clip region applied to graphics capture frames (frame sizes/frame coordinates don't match GDI window sizes/coordinates)
         RECT gdiClipRegion {}; // Source window clip region in windows GDI coordinates

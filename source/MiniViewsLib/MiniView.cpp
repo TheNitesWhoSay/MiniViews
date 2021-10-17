@@ -27,7 +27,7 @@ const DWORD MiniView::editModeStyles(WS_THICKFRAME|WS_CAPTION|WS_SYSMENU);
 
 HICON MiniView::frozenIcon(NULL);
 
-MiniView::MiniView(IMiniViewUser* user) : graphicsCaptureMirror({}), hSource(NULL), settingWindow(true), editMode(true),
+MiniView::MiniView(IMiniViewUser* user) : graphicsCaptureMirror(), hSource(NULL), settingWindow(true), editMode(true),
     hideWhenSourceOnTop(user->GetDefaultHideWhenSourceOnTop(*this)),
 	hiddenBySourceOnTop(true), hiddenByParent(false),
 	isGdiCompatible(false), isGraphicsCaptureCompatible(false), isFrozen(false),
@@ -136,7 +136,8 @@ void MiniView::SetClip(bool isClipped, int left, int top, int right, int bottom)
 		::GetClientRect(hSource, &sourceClientRect);
 		LONG wSrc = sourceClientRect.right - sourceClientRect.left,
 		     hSrc = sourceClientRect.bottom - sourceClientRect.top;
-        this->graphicsCaptureMirror.setClip(rcClip.left, rcClip.top, rcClip.right, rcClip.bottom, wSrc, hSrc);
+		if ( this->isGraphicsCaptureCompatible )
+			this->graphicsCaptureMirror.setClip(rcClip.left, rcClip.top, rcClip.right, rcClip.bottom, wSrc, hSrc);
 	}
 }
 
@@ -154,7 +155,8 @@ void MiniView::SetClipRegion()
 void MiniView::ClearClipRegion()
 {
 	BlackoutMiniView();
-	this->graphicsCaptureMirror.clearClip();
+	if ( this->isGraphicsCaptureCompatible )
+		this->graphicsCaptureMirror.clearClip();
     int borderWidth = 0, borderHeight = 0;
     GetBorderSize(borderWidth, borderHeight);
 	WindowsItem::SetWidth(lastUserSetCliWidth + borderWidth);
@@ -462,7 +464,7 @@ void MiniView::MatchSource(bool matchPos, bool matchSize)
             lastUserSetCliHeight = cliHeight();
         }
 
-		if ( this->clipped )
+		if ( this->clipped && this->isGraphicsCaptureCompatible )
 		{
 			LONG wSrc = sourceClientRect.right - sourceClientRect.left,
 				 hSrc = sourceClientRect.bottom - sourceClientRect.top;
@@ -719,7 +721,7 @@ void MiniView::DoSizing(WPARAM wParam, RECT* rect)
 	lastUserSetCliWidth = rect->right - rect->left - borderWidth;
 	lastUserSetCliHeight = rect->bottom - rect->top - borderHeight;
 	
-	if ( this->clipped )
+	if ( this->clipped && this->isGraphicsCaptureCompatible )
 	{
 		RECT sourceClientRect = {};
 		::GetClientRect(hSource, &sourceClientRect);
