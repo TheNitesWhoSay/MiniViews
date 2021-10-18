@@ -1,6 +1,5 @@
 #include "Updater.h"
 #include <chrono>
-#include <ShellScalingApi.h>
 
 Updater::Updater(IUpdatable &targetObject) :
 	updatableObject(targetObject), continueUpdating(true), intervalBetweenUpdates(60), updateThread(nullptr)
@@ -25,7 +24,6 @@ void Updater::SetUpdateInterval(int newUpdateInterval)
 
 void LaunchPushUpdates(Updater* updater)
 {
-	SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
 	updater->PushUpdates();
 }
 

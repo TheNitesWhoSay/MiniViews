@@ -25,7 +25,7 @@ AdvancedWindow::AdvancedWindow() : blockEditNotify(true), lastActionClearedSetti
 
 }
 
-bool AdvancedWindow::CreateThis(HWND hParent, u64 windowId)
+bool AdvancedWindow::CreateThis(HWND hParent, u64 windowId, int dpi, HFONT font)
 {
 	if ( getHandle() != NULL )
 		return SetParent(hParent);
@@ -34,10 +34,10 @@ bool AdvancedWindow::CreateThis(HWND hParent, u64 windowId)
 	if ( GetClientRect(hParent, &rcCli) &&
 		ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "AdvancedWindow", NULL, false) &&
 		ClassWindow::CreateClassWindow(NULL, "Advanced Tab", WS_CHILD,
-			5, 22, rcCli.right - rcCli.left-5, rcCli.bottom - rcCli.top-22, hParent, (HMENU)windowId) )
+			DpiScale(5, dpi), DpiScale(22, dpi), rcCli.right - rcCli.left-DpiScale(5, dpi), rcCli.bottom - rcCli.top-DpiScale(22, dpi), hParent, (HMENU)windowId) )
 	{
         blockEditNotify = true;
-		CreateSubWindows();
+		CreateSubWindows(dpi, font);
         blockEditNotify = false;
 		return true;
 	}
@@ -82,7 +82,7 @@ void AdvancedWindow::RefreshWindow()
     blockEditNotify = false;
 }
 
-void AdvancedWindow::FixPositions()
+void AdvancedWindow::FixPositions(int dpi, HFONT font)
 {
 	
 }
@@ -92,20 +92,21 @@ bool AdvancedWindow::LastActionClearedSettings()
     return lastActionClearedSettings;
 }
 
-void AdvancedWindow::CreateSubWindows()
+void AdvancedWindow::CreateSubWindows(int dpi, HFONT font)
 {
-	checkShowDialogOnStart.CreateThis(getHandle(), 0, 5, 180, 23,
+	WindowsItem::SetFont(font, false);
+	checkShowDialogOnStart.CreateThis(getHandle(), 0, DpiScale(5, dpi), DpiScale(180, dpi), DpiScale(23, dpi),
         miniViews.prefs.ShowDialogOnStart.Get(), "Always Show Dialog On Start", (u32)Id::CheckShowDialogOnStart);
-	checkUseNotificationIcon.CreateThis(getHandle(), 0, checkShowDialogOnStart.Bottom() + 2, 180, 23,
+	checkUseNotificationIcon.CreateThis(getHandle(), 0, checkShowDialogOnStart.Bottom() + DpiScale(2, dpi), DpiScale(180, dpi), DpiScale(23, dpi),
         miniViews.prefs.UseNotificationIcon.Get(), "Use Notification Icon", (u32)Id::CheckUseNotificationIcon);
-	checkMinimizeToNotificationIcon.CreateThis(getHandle(), 0, checkUseNotificationIcon.Bottom() + 2, 180, 23,
+	checkMinimizeToNotificationIcon.CreateThis(getHandle(), 0, checkUseNotificationIcon.Bottom() + DpiScale(2, dpi), DpiScale(180, dpi), DpiScale(23, dpi),
         miniViews.prefs.MinimizeToNotificationIcon.Get(), "Minimize To Notification Icon", (u32)Id::CheckMinimizeToNotificationIcon);
-	checkConfirmExit.CreateThis(getHandle(), 0, checkMinimizeToNotificationIcon.Bottom() + 2, 180, 23,
+	checkConfirmExit.CreateThis(getHandle(), 0, checkMinimizeToNotificationIcon.Bottom() + DpiScale(2, dpi), DpiScale(180, dpi), DpiScale(23, dpi),
         miniViews.prefs.ConfirmExit.Get(), "Confirm Exit By Dialog", (u32)Id::CheckConfirmExit);
     
     WinLib::TextControl textDefaultOpacity;
-    textDefaultOpacity.CreateThis(getHandle(), 0, checkConfirmExit.Bottom() + 8, 147, 23, "Default Opacity Level (0-255): ", 0);
-    editDefaultOpacity.CreateThis(getHandle(), textDefaultOpacity.Right() + 5, textDefaultOpacity.Top() - 3, 75, 23, false, (u32)Id::EditDefaultOpacity);
+    textDefaultOpacity.CreateThis(getHandle(), 0, checkConfirmExit.Bottom() + DpiScale(8, dpi), DpiScale(150, dpi), DpiScale(23, dpi), "Default Opacity Level (0-255): ", 0);
+    editDefaultOpacity.CreateThis(getHandle(), textDefaultOpacity.Right() + DpiScale(5, dpi), textDefaultOpacity.Top() - DpiScale(3, dpi), DpiScale(75, dpi), DpiScale(23, dpi), false, (u32)Id::EditDefaultOpacity);
     editDefaultOpacity.SetTextLimit(3);
     editDefaultOpacity.SetEditNum(miniViews.prefs.DefaultOpacity.Get());
     HWND hTransparencyBuddy = CreateWindowEx(NULL, UPDOWN_CLASS, NULL, WS_CHILDWINDOW | WS_VISIBLE | WS_DISABLED | UDS_SETBUDDYINT |
@@ -114,18 +115,18 @@ void AdvancedWindow::CreateSubWindows()
     SendMessage(hTransparencyBuddy, UDM_SETRANGE32, 0, MAKELPARAM(255, 0));
     EnableWindow(hTransparencyBuddy, TRUE);
 
-    groupViewDefaults.CreateThis(getHandle(), 0, editDefaultOpacity.Bottom()+10, 250, 120, "Mini View Defaults", 0);
-    checkDefaultMatchSourcePosition.CreateThis(getHandle(), groupViewDefaults.Left() + 10, groupViewDefaults.Top() + 20, 200, 23, false, "Match Source Position by Default", (u32)Id::CheckDefaultMatchSourcePosition);
-    checkDefaultMatchSourceSize.CreateThis(getHandle(), groupViewDefaults.Left() + 10, checkDefaultMatchSourcePosition.Bottom() + 2, 200, 23, false, "Match Source Size by Default", (u32)Id::CheckDefaultMatchSourceSize);
-    checkDefaultLockSizeRatio.CreateThis(getHandle(), groupViewDefaults.Left() + 10, checkDefaultMatchSourceSize.Bottom() + 2, 200, 23, true, "Lock Size Ratio by Default", (u32)Id::CheckDefaultLockSizeRatio);
-    checkDefaultHideWhenSourceOnTop.CreateThis(getHandle(), groupViewDefaults.Left() + 10, checkDefaultLockSizeRatio.Bottom() + 2, 200, 23, true, "Hide When Source on Top by Default", (u32)Id::CheckDefaultHideWhenSourceOnTop);
+    groupViewDefaults.CreateThis(getHandle(), 0, editDefaultOpacity.Bottom()+DpiScale(10, dpi), DpiScale(250, dpi), DpiScale(120, dpi), "Mini View Defaults", 0);
+    checkDefaultMatchSourcePosition.CreateThis(getHandle(), groupViewDefaults.Left() + DpiScale(10, dpi), groupViewDefaults.Top() + DpiScale(20, dpi), DpiScale(200, dpi), DpiScale(23, dpi), false, "Match Source Position by Default", (u32)Id::CheckDefaultMatchSourcePosition);
+    checkDefaultMatchSourceSize.CreateThis(getHandle(), groupViewDefaults.Left() + DpiScale(10, dpi), checkDefaultMatchSourcePosition.Bottom() + DpiScale(2, dpi), DpiScale(200, dpi), DpiScale(23, dpi), false, "Match Source Size by Default", (u32)Id::CheckDefaultMatchSourceSize);
+    checkDefaultLockSizeRatio.CreateThis(getHandle(), groupViewDefaults.Left() + DpiScale(10, dpi), checkDefaultMatchSourceSize.Bottom() + DpiScale(2, dpi), DpiScale(200, dpi), DpiScale(23, dpi), true, "Lock Size Ratio by Default", (u32)Id::CheckDefaultLockSizeRatio);
+    checkDefaultHideWhenSourceOnTop.CreateThis(getHandle(), groupViewDefaults.Left() + DpiScale(10, dpi), checkDefaultLockSizeRatio.Bottom() + DpiScale(2, dpi), DpiScale(200, dpi), DpiScale(23, dpi), true, "Hide When Source on Top by Default", (u32)Id::CheckDefaultHideWhenSourceOnTop);
 
-    groupFrozenSourceBehaviorDefaults.CreateThis(getHandle(), 0, groupViewDefaults.Bottom()+10, 250, 95, "Frozen Source Behavior", 0);
-    checkUseCachedImageWhenFrozen.CreateThis(getHandle(), groupFrozenSourceBehaviorDefaults.Left() + 10, groupFrozenSourceBehaviorDefaults.Top() + 20, 200, 23, true, "Use Cached Image When Frozen", (u32)Id::CheckUseCachedImageWhenFrozen);
-    checkShowFrozenIndicatorIcon.CreateThis(getHandle(), groupFrozenSourceBehaviorDefaults.Left() + 10, checkUseCachedImageWhenFrozen.Bottom() + 2, 200, 23, true, "Show Frozen Indicator Icon", (u32)Id::CheckShowFrozenIndicatorIcon);
-    checkShowFrozenContextMenuItem.CreateThis(getHandle(), groupFrozenSourceBehaviorDefaults.Left() + 10, checkShowFrozenIndicatorIcon.Bottom() + 2, 200, 23, true, "Show Frozen Context Menu Item", (u32)Id::CheckShowFrozenContextMenuItem);
+    groupFrozenSourceBehaviorDefaults.CreateThis(getHandle(), 0, groupViewDefaults.Bottom()+DpiScale(10, dpi), DpiScale(250, dpi), DpiScale(95, dpi), "Frozen Source Behavior", 0);
+    checkUseCachedImageWhenFrozen.CreateThis(getHandle(), groupFrozenSourceBehaviorDefaults.Left() + DpiScale(10, dpi), groupFrozenSourceBehaviorDefaults.Top() + DpiScale(20, dpi), DpiScale(200, dpi), DpiScale(23, dpi), true, "Use Cached Image When Frozen", (u32)Id::CheckUseCachedImageWhenFrozen);
+    checkShowFrozenIndicatorIcon.CreateThis(getHandle(), groupFrozenSourceBehaviorDefaults.Left() + DpiScale(10, dpi), checkUseCachedImageWhenFrozen.Bottom() + DpiScale(2, dpi), DpiScale(200, dpi), DpiScale(23, dpi), true, "Show Frozen Indicator Icon", (u32)Id::CheckShowFrozenIndicatorIcon);
+    checkShowFrozenContextMenuItem.CreateThis(getHandle(), groupFrozenSourceBehaviorDefaults.Left() + DpiScale(10, dpi), checkShowFrozenIndicatorIcon.Bottom() + DpiScale(2, dpi), DpiScale(200, dpi), DpiScale(23, dpi), true, "Show Frozen Context Menu Item", (u32)Id::CheckShowFrozenContextMenuItem);
 
-    buttonClearSavedSettings.CreateThis(getHandle(), 0, groupFrozenSourceBehaviorDefaults.Bottom() + 8, 125, 23, "Clear Saved Settings", (u32)Id::ButtonClearSavedSettings);
+    buttonClearSavedSettings.CreateThis(getHandle(), 0, groupFrozenSourceBehaviorDefaults.Bottom() + DpiScale(8, dpi), DpiScale(125, dpi), DpiScale(23, dpi), "Clear Saved Settings", (u32)Id::ButtonClearSavedSettings);
 }
 
 bool ToggleUseNotificationIcon()
