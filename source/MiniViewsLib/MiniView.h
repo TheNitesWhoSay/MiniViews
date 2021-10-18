@@ -119,7 +119,7 @@ class MiniView : public WinLib::ClassWindow
 		void SizeFinished();
 		void WindowMoved();
 		void SetMinMaxSize(MINMAXINFO &minMaxInfo);
-		void WindowDropped();
+		void ExitSizeMove();
 		bool IsSourceOnTop();
 		void CheckHideBySourceOnTop();
 		void RunContextMenu();

@@ -13,7 +13,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
-#include <ShellScalingApi.h>
 
 namespace WinrtGraphics
 {
@@ -23,12 +22,8 @@ namespace WinrtGraphics
         static inline thread_local winrt::Windows::System::DispatcherQueue mainDispatcherQueue{ nullptr };
     };
 
-    InitializerResult InitializeGraphicsCaptureApplication(bool dpiAware)
+    InitializerResult InitializeGraphicsCaptureApplication()
     {
-        if ( dpiAware )
-	        SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
-            //SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-
         winrt::init_apartment(); // Initialize COM and thread in windows runtime in a multithreaded apartment
 
         if ( !winrt::Windows::Graphics::Capture::GraphicsCaptureSession::IsSupported() )

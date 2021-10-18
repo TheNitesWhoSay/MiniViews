@@ -9,13 +9,13 @@
 class ViewsWindow : public WinLib::ClassWindow
 {
 	public:
-		bool CreateThis(HWND hParent, u64 windowId);
+		bool CreateThis(HWND hParent, u64 windowId, int dpi, HFONT font);
 		bool DestroyThis();
 		void RefreshWindow(bool rebuildTree, bool refreshNames); // refreshNames is redundant/ignored when rebuildTree is set
-		void FixPositions();
+		void FixPositions(int dpi, HFONT font);
 
 	protected:
-		void CreateSubWindows();
+		void CreateSubWindows(int dpi, HFONT font);
 		void EnableEditing();
 		void DisableEditing();
 		virtual void NotifyTreeSelChanged(LPARAM newValue); // Sent when a new tree item is selected
