@@ -6,35 +6,35 @@
 
 class CLI
 {
-	public: 
-		CLI() : consoleIn(NULL), consoleOut(NULL)
-		{ 
-			if ( ::GetConsoleWindow() == NULL )
-			{
-				if ( ::AllocConsole() != 0 )
-				{
-					if ( ::freopen_s(&consoleIn, "CONIN$", "r", stdin) == 0 )
-						std::cin.clear();
-					if ( ::freopen_s(&consoleOut, "CONOUT$", "w", stdout) == 0 )
-						std::cout.clear();
-				}
-			}
-		}
+    public: 
+        CLI() : consoleIn(NULL), consoleOut(NULL)
+        { 
+            if ( ::GetConsoleWindow() == NULL )
+            {
+                if ( ::AllocConsole() != 0 )
+                {
+                    if ( ::freopen_s(&consoleIn, "CONIN$", "r", stdin) == 0 )
+                        std::cin.clear();
+                    if ( ::freopen_s(&consoleOut, "CONOUT$", "w", stdout) == 0 )
+                        std::cout.clear();
+                }
+            }
+        }
 
-		~CLI()
-		{
-			if ( consoleIn != NULL )
-				::fclose(consoleIn);
+        ~CLI()
+        {
+            if ( consoleIn != NULL )
+                ::fclose(consoleIn);
 
-			if ( consoleOut != NULL )
-				::fclose(consoleOut);
+            if ( consoleOut != NULL )
+                ::fclose(consoleOut);
 
-			::FreeConsole();
-		}
+            ::FreeConsole();
+        }
 
-	private:
-		FILE* consoleIn;
-		FILE* consoleOut;
+    private:
+        FILE* consoleIn;
+        FILE* consoleOut;
 };
 
 #endif

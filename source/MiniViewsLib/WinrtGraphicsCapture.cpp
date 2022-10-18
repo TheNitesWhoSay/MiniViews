@@ -228,7 +228,7 @@ namespace WinrtGraphics
             this->gdiSourceSize.cx = sourceWidth;
             this->gdiSourceSize.cy = sourceHeight;
             this->frameClipRegionInvalid = true;
-		    
+            
             this->setClipNoLock(sourceClipLeft, sourceClipTop, sourceClipRight, sourceClipBottom, sourceWidth, sourceHeight);
         }
         else if ( this->clipPaused )
@@ -238,7 +238,7 @@ namespace WinrtGraphics
                 sourceWidth, sourceHeight);
         }
         else
-		    this->createMirrorNoLock(hParent, hSource);
+            this->createMirrorNoLock(hParent, hSource);
     }
 
     void Mirror::setClip(LONG left, LONG top, LONG right, LONG bottom, LONG sourceWidth, LONG sourceHeight)
@@ -251,7 +251,7 @@ namespace WinrtGraphics
     {
         std::unique_lock<std::mutex> lockWhileAdjusting(readWriteGuard);
         clearClipNoLock();
-		this->createMirrorNoLock(hParent, hSource);
+        this->createMirrorNoLock(hParent, hSource);
     }
 
     void Mirror::reset()
