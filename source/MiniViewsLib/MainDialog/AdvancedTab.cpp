@@ -4,10 +4,10 @@
 
 enum class Id : int
 {
-	CheckShowDialogOnStart = ID_FIRST,
-	CheckUseNotificationIcon,
-	CheckMinimizeToNotificationIcon,
-	CheckConfirmExit,
+    CheckShowDialogOnStart = ID_FIRST,
+    CheckUseNotificationIcon,
+    CheckMinimizeToNotificationIcon,
+    CheckConfirmExit,
     EditDefaultOpacity,
     EditDefaultOpacityBuddy,
     CheckDefaultMatchSourcePosition,
@@ -17,7 +17,7 @@ enum class Id : int
     CheckUseCachedImageWhenFrozen,
     CheckShowFrozenIndicatorIcon,
     CheckShowFrozenContextMenuItem,
-	ButtonClearSavedSettings
+    ButtonClearSavedSettings
 };
 
 AdvancedWindow::AdvancedWindow() : blockEditNotify(true), lastActionClearedSettings(false)
@@ -27,37 +27,37 @@ AdvancedWindow::AdvancedWindow() : blockEditNotify(true), lastActionClearedSetti
 
 bool AdvancedWindow::CreateThis(HWND hParent, u64 windowId, int dpi, HFONT font)
 {
-	if ( getHandle() != NULL )
-		return SetParent(hParent);
+    if ( getHandle() != NULL )
+        return SetParent(hParent);
 
-	RECT rcCli = {};
-	if ( GetClientRect(hParent, &rcCli) &&
-		ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "AdvancedWindow", NULL, false) &&
-		ClassWindow::CreateClassWindow(NULL, "Advanced Tab", WS_CHILD,
-			DpiScale(5, dpi), DpiScale(22, dpi), rcCli.right - rcCli.left-DpiScale(5, dpi), rcCli.bottom - rcCli.top-DpiScale(22, dpi), hParent, (HMENU)windowId) )
-	{
+    RECT rcCli = {};
+    if ( GetClientRect(hParent, &rcCli) &&
+        ClassWindow::RegisterWindowClass(NULL, NULL, NULL, NULL, NULL, "AdvancedWindow", NULL, false) &&
+        ClassWindow::CreateClassWindow(NULL, "Advanced Tab", WS_CHILD,
+            DpiScale(5, dpi), DpiScale(22, dpi), rcCli.right - rcCli.left-DpiScale(5, dpi), rcCli.bottom - rcCli.top-DpiScale(22, dpi), hParent, (HMENU)windowId) )
+    {
         blockEditNotify = true;
-		CreateSubWindows(dpi, font);
+        CreateSubWindows(dpi, font);
         blockEditNotify = false;
-		return true;
-	}
-	else
-		return false;
+        return true;
+    }
+    else
+        return false;
 }
 
 bool AdvancedWindow::DestroyThis()
 {
     ClassWindow::DestroyThis();
-	return true;
+    return true;
 }
 
 void AdvancedWindow::RefreshWindow()
 {
     blockEditNotify = true;
-	checkShowDialogOnStart.SetCheck(miniViews.prefs.ShowDialogOnStart.Get());
+    checkShowDialogOnStart.SetCheck(miniViews.prefs.ShowDialogOnStart.Get());
 
     bool useNotificationIcon = miniViews.prefs.UseNotificationIcon.Get();
-	checkUseNotificationIcon.SetCheck(useNotificationIcon);
+    checkUseNotificationIcon.SetCheck(useNotificationIcon);
     if ( useNotificationIcon )
     {
         checkMinimizeToNotificationIcon.SetCheck(miniViews.prefs.MinimizeToNotificationIcon.Get());
@@ -68,7 +68,7 @@ void AdvancedWindow::RefreshWindow()
         checkMinimizeToNotificationIcon.SetCheck(false);
         checkMinimizeToNotificationIcon.DisableThis();
     }
-	checkConfirmExit.SetCheck(miniViews.prefs.ConfirmExit.Get());
+    checkConfirmExit.SetCheck(miniViews.prefs.ConfirmExit.Get());
 
     editDefaultOpacity.SetEditNum<u32>(miniViews.prefs.DefaultOpacity.Get());
 
@@ -84,7 +84,7 @@ void AdvancedWindow::RefreshWindow()
 
 void AdvancedWindow::FixPositions(int dpi, HFONT font)
 {
-	
+    
 }
 
 bool AdvancedWindow::LastActionClearedSettings()
@@ -94,14 +94,14 @@ bool AdvancedWindow::LastActionClearedSettings()
 
 void AdvancedWindow::CreateSubWindows(int dpi, HFONT font)
 {
-	WindowsItem::SetFont(font, false);
-	checkShowDialogOnStart.CreateThis(getHandle(), 0, DpiScale(5, dpi), DpiScale(180, dpi), DpiScale(23, dpi),
+    WindowsItem::SetFont(font, false);
+    checkShowDialogOnStart.CreateThis(getHandle(), 0, DpiScale(5, dpi), DpiScale(180, dpi), DpiScale(23, dpi),
         miniViews.prefs.ShowDialogOnStart.Get(), "Always Show Dialog On Start", (u32)Id::CheckShowDialogOnStart);
-	checkUseNotificationIcon.CreateThis(getHandle(), 0, checkShowDialogOnStart.Bottom() + DpiScale(2, dpi), DpiScale(180, dpi), DpiScale(23, dpi),
+    checkUseNotificationIcon.CreateThis(getHandle(), 0, checkShowDialogOnStart.Bottom() + DpiScale(2, dpi), DpiScale(180, dpi), DpiScale(23, dpi),
         miniViews.prefs.UseNotificationIcon.Get(), "Use Notification Icon", (u32)Id::CheckUseNotificationIcon);
-	checkMinimizeToNotificationIcon.CreateThis(getHandle(), 0, checkUseNotificationIcon.Bottom() + DpiScale(2, dpi), DpiScale(180, dpi), DpiScale(23, dpi),
+    checkMinimizeToNotificationIcon.CreateThis(getHandle(), 0, checkUseNotificationIcon.Bottom() + DpiScale(2, dpi), DpiScale(180, dpi), DpiScale(23, dpi),
         miniViews.prefs.MinimizeToNotificationIcon.Get(), "Minimize To Notification Icon", (u32)Id::CheckMinimizeToNotificationIcon);
-	checkConfirmExit.CreateThis(getHandle(), 0, checkMinimizeToNotificationIcon.Bottom() + DpiScale(2, dpi), DpiScale(180, dpi), DpiScale(23, dpi),
+    checkConfirmExit.CreateThis(getHandle(), 0, checkMinimizeToNotificationIcon.Bottom() + DpiScale(2, dpi), DpiScale(180, dpi), DpiScale(23, dpi),
         miniViews.prefs.ConfirmExit.Get(), "Confirm Exit By Dialog", (u32)Id::CheckConfirmExit);
     
     WinLib::TextControl textDefaultOpacity;
@@ -145,14 +145,14 @@ bool ToggleUseNotificationIcon()
 
 void AdvancedWindow::NotifyButtonClicked(int idFrom, HWND)
 {
-	bool success = true;
-	bool performedCommand = true;
-	switch ( (Id)idFrom )
-	{
+    bool success = true;
+    bool performedCommand = true;
+    switch ( (Id)idFrom )
+    {
         case Id::CheckUseNotificationIcon: success = miniViews.prefs.UseNotificationIcon.Toggle(); miniViews.RemoveNotificationIcon(); break;
-		case Id::CheckShowDialogOnStart: success = miniViews.prefs.ShowDialogOnStart.Toggle(); break;
-		case Id::CheckMinimizeToNotificationIcon: success = miniViews.prefs.MinimizeToNotificationIcon.Toggle(); break;
-		case Id::CheckConfirmExit: success = miniViews.prefs.ConfirmExit.Toggle(); break;
+        case Id::CheckShowDialogOnStart: success = miniViews.prefs.ShowDialogOnStart.Toggle(); break;
+        case Id::CheckMinimizeToNotificationIcon: success = miniViews.prefs.MinimizeToNotificationIcon.Toggle(); break;
+        case Id::CheckConfirmExit: success = miniViews.prefs.ConfirmExit.Toggle(); break;
         case Id::CheckDefaultMatchSourcePosition: success = miniViews.prefs.DefaultMatchSourcePosition.Toggle(); break;
         case Id::CheckDefaultMatchSourceSize: success = miniViews.prefs.DefaultMatchSourceSize.Toggle(); break;
         case Id::CheckDefaultLockSizeRatio: success = miniViews.prefs.DefaultLockSizeRatio.Toggle(); break;
@@ -161,17 +161,17 @@ void AdvancedWindow::NotifyButtonClicked(int idFrom, HWND)
         case Id::CheckShowFrozenIndicatorIcon: success = miniViews.prefs.ShowFrozenIndicatorIcon.Toggle(); break;
         case Id::CheckShowFrozenContextMenuItem: success = miniViews.prefs.ShowFrozenContextMenuItem.Toggle(); break;
         case Id::ButtonClearSavedSettings: success = miniViews.prefs.ClearSavedPreferences(); break;
-		default: performedCommand = false; break;
-	}
-	
-	if ( performedCommand )
-	{
+        default: performedCommand = false; break;
+    }
+    
+    if ( performedCommand )
+    {
         lastActionClearedSettings = (Id)idFrom == Id::ButtonClearSavedSettings;
-		if ( !success )
+        if ( !success )
             WinLib::Message("Failed to update settings: " + std::to_string(GetLastError()), "Error!");
 
-		RefreshWindow();
-	}
+        RefreshWindow();
+    }
 }
 
 void AdvancedWindow::NotifyEditUpdated(int idFrom, HWND)
