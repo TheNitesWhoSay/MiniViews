@@ -1,5 +1,5 @@
 #include "WindowMenu.h"
-#include "../IcuLib/SimpleIcu.h"
+#include "../CrossCutLib/SimpleIcu.h"
 
 namespace WinLib {
 
@@ -36,11 +36,7 @@ namespace WinLib {
         {
             auto uiText = icux::toUistring(text);
             menuItemInfo.fMask = MIIM_STRING;
-#ifdef UTF16_UI
-            menuItemInfo.dwTypeData = (LPWSTR)uiText.c_str();
-#else
-            menuItemInfo.dwTypeData = (LPSTR)uiText.c_str();
-#endif
+            menuItemInfo.dwTypeData = (decltype(menuItemInfo.dwTypeData))uiText.c_str();
             SetMenuItemInfo(hMenu, itemId, FALSE, &menuItemInfo);
         }
         

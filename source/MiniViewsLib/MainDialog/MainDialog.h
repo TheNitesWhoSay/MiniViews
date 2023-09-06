@@ -48,7 +48,6 @@ class MainDialog : public WinLib::ClassWindow
         TabId selectedTab;
 
         HFONT defaultFont;
-        HICON smallIcon, mediumIcon;
 };
 
 #endif

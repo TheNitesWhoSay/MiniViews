@@ -24,7 +24,7 @@ class MiniViews : public WinLib::ClassWindow, public IUpdatable, public IMiniVie
         int Run(int showCommand); // Starts the program using the provided arguments
         int CriticalError(int returnValue, const std::string & errorMessage);
 
-        virtual void TimedUpdate(); // Causes UpdateMiniViews to run soon on the main thread
+        void TimedUpdate() override; // Causes UpdateMiniViews to run soon on the main thread
         std::vector<std::shared_ptr<MiniView>> &GetMiniViewList();
         void EndSetClipRegion(MiniView &miniView, RECT rcClip);
         bool IsInEditMode();
@@ -43,16 +43,16 @@ class MiniViews : public WinLib::ClassWindow, public IUpdatable, public IMiniVie
         void Rest(); // Called when no MiniViews are active to reduce resource use
         void Wake(); // Called when a MiniView is added after Rest() has been called
 
-        virtual void NotifyChange(MiniView &miniView); // Sent when the user causes a change to the MiniView
-        virtual void CloseMiniView(MiniView &miniView); // Closes the corresponding MiniView
-        virtual void SetClipRegion(MiniView &miniView);
-        virtual bool GetDefaultMatchSourcePosition(MiniView &miniView);
-        virtual bool GetDefaultMatchSourceSize(MiniView &miniView);
-        virtual bool GetDefaultLockSizeRatio(MiniView &miniView);
-        virtual bool GetDefaultHideWhenSourceOnTop(MiniView &miniView);
-        virtual bool GetUseCachedImageWhenFrozen(MiniView &miniView);
-        virtual bool GetShowFrozenIndicatorIcon(MiniView &miniView);
-        virtual bool GetShowFrozenContextMenuItem(MiniView &miniView);
+        void NotifyChange(MiniView &miniView) override; // Sent when the user causes a change to the MiniView
+        void CloseMiniView(MiniView &miniView) override; // Closes the corresponding MiniView
+        void SetClipRegion(MiniView &miniView) override;
+        bool GetDefaultMatchSourcePosition(MiniView &miniView) override;
+        bool GetDefaultMatchSourceSize(MiniView &miniView) override;
+        bool GetDefaultLockSizeRatio(MiniView &miniView) override;
+        bool GetDefaultHideWhenSourceOnTop(MiniView &miniView) override;
+        bool GetUseCachedImageWhenFrozen(MiniView &miniView) override;
+        bool GetShowFrozenIndicatorIcon(MiniView &miniView) override;
+        bool GetShowFrozenContextMenuItem(MiniView &miniView) override;
         bool CreateThis(); // Creates this window
         bool RegisterHotkeys(); // Registers the relevant hotkeys for controlling the program
         bool EnsureOnlyInstance();
@@ -78,8 +78,6 @@ class MiniViews : public WinLib::ClassWindow, public IUpdatable, public IMiniVie
 
         ClipSel clipSel;
         MainDialog mainDialog;
-        HCURSOR defaultCursor;
-        HICON smallIcon, mediumIcon;
         COLORREF transparentColor; // The color which is set to transparent for this window
         HBRUSH transparentBrush; // A brush with the transparent color
         u8 transparencyAlpha; // The transparency alpha level, lower levels are more see through

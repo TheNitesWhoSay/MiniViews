@@ -1,6 +1,7 @@
 #ifndef ABOUTTAB_H
 #define ABOUTTAB_H
 #include "../../WindowsLib/WindowsUi.h"
+#include "../Common.h"
 
 class AboutWindow : public WinLib::ClassWindow
 {
@@ -12,7 +13,7 @@ class AboutWindow : public WinLib::ClassWindow
 
     protected:
         void CreateSubWindows(int dpi, HFONT font);
-        virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
+        void NotifyButtonClicked(int idFrom, HWND hWndFrom) override; // Sent when a button or checkbox is clicked
 
     private:
         WinLib::ButtonControl buttonWebsite;

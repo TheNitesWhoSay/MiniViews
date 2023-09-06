@@ -45,7 +45,7 @@ void AboutWindow::FixPositions(int dpi, HFONT font)
 
 void AboutWindow::CreateSubWindows(int dpi, HFONT font)
 {
-    WindowsItem::SetFont(font, false);
+    WindowsItem::setFont(font, false);
     int padding = DpiScale(5, dpi);
     buttonWebsite.CreateThis(getHandle(), 0, DpiScale(5, dpi), DpiScale(100, dpi), DpiScale(23, dpi), "Website", (u32)Id::ButtonWebsite);
     buttonManual.CreateThis(getHandle(), 0, buttonWebsite.Bottom() + padding, DpiScale(100, dpi), DpiScale(23, dpi), "Manual", (u32)Id::ButtonManual);

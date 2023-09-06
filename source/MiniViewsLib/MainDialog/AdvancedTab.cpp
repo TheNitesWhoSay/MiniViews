@@ -94,7 +94,7 @@ bool AdvancedWindow::LastActionClearedSettings()
 
 void AdvancedWindow::CreateSubWindows(int dpi, HFONT font)
 {
-    WindowsItem::SetFont(font, false);
+    WindowsItem::setFont(font, false);
     checkShowDialogOnStart.CreateThis(getHandle(), 0, DpiScale(5, dpi), DpiScale(180, dpi), DpiScale(23, dpi),
         miniViews.prefs.ShowDialogOnStart.Get(), "Always Show Dialog On Start", (u32)Id::CheckShowDialogOnStart);
     checkUseNotificationIcon.CreateThis(getHandle(), 0, checkShowDialogOnStart.Bottom() + DpiScale(2, dpi), DpiScale(180, dpi), DpiScale(23, dpi),

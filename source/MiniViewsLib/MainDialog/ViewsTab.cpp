@@ -58,8 +58,8 @@ void ViewsWindow::RefreshWindow(bool rebuildTree, bool refreshNames)
             if ( currMiniView == miniView )
                 includesCurrMiniView = true;
 
-            std::string miniViewTitle = miniView->GetWinText();
-            HTREEITEM treeItem = treeMiniViews.InsertTreeItem(NULL, miniView->GetWinText().c_str(), i);
+            std::string miniViewTitle = miniView->GetWinText().value();
+            HTREEITEM treeItem = treeMiniViews.InsertTreeItem(NULL, miniView->GetWinText().value(), i);
             currTreeItems.push_back(std::tuple<HTREEITEM, std::string, std::shared_ptr<MiniView>>(treeItem, miniViewTitle, miniView));
             i++;
         }
@@ -72,10 +72,10 @@ void ViewsWindow::RefreshWindow(bool rebuildTree, bool refreshNames)
     {
         for ( auto &tuple : currTreeItems )
         {
-            if ( std::get<1>(tuple).compare(std::get<2>(tuple)->GetWinText()) != 0 )
+            if ( std::get<1>(tuple).compare(std::get<2>(tuple)->GetWinText().value()) != 0 )
             {
-                std::get<1>(tuple) = std::get<2>(tuple)->GetWinText();
-                treeMiniViews.SetItemText(std::get<0>(tuple), std::get<2>(tuple)->GetWinText().c_str());
+                std::get<1>(tuple) = std::get<2>(tuple)->GetWinText().value();
+                treeMiniViews.SetItemText(std::get<0>(tuple), std::get<2>(tuple)->GetWinText().value());
             }
         }
     }
@@ -191,7 +191,7 @@ void ViewsWindow::DisableEditing()
 
 void ViewsWindow::CreateSubWindows(int dpi, HFONT font)
 {
-    WindowsItem::SetFont(font, false);
+    WindowsItem::setFont(font, false);
     treeMiniViews.CreateThis(getHandle(), 0, DpiScale(5, dpi), DpiScale(100, dpi), cliHeight() - DpiScale(10, dpi), false, 0);
 
     groupSize.CreateThis(getHandle(), treeMiniViews.Right() + DpiScale(5, dpi), DpiScale(5, dpi), DpiScale(145, dpi), DpiScale(179, dpi), "Window Settings", 0);
@@ -228,7 +228,7 @@ void ViewsWindow::CreateSubWindows(int dpi, HFONT font)
         DpiScale(150, dpi), DpiScale(23, dpi), false, "Hide When Source On Top", (u32)Id::CheckHideWhenSourceOnTop);
 }
 
-void ViewsWindow::NotifyTreeSelChanged(LPARAM newValue)
+void ViewsWindow::NotifyTreeItemSelected(LPARAM newValue)
 {
     currMiniView = nullptr;
     LPARAM i = 0;

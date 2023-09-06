@@ -121,6 +121,9 @@
     <ClInclude Include="Math.h">
       <Filter>Header Files\%2a</Filter>
     </ClInclude>
+    <ClInclude Include="Common.h">
+      <Filter>Header Files\%2a</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

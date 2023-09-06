@@ -18,9 +18,9 @@ class ViewsWindow : public WinLib::ClassWindow
         void CreateSubWindows(int dpi, HFONT font);
         void EnableEditing();
         void DisableEditing();
-        virtual void NotifyTreeSelChanged(LPARAM newValue); // Sent when a new tree item is selected
-        virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
-        virtual void NotifyEditFocusLost(int idFrom, HWND hWndFrom);
+        void NotifyTreeItemSelected(LPARAM newValue) override; // Sent when a tree item is selected, or an already-selected item is re-clicked
+        void NotifyButtonClicked(int idFrom, HWND hWndFrom) override; // Sent when a button or checkbox is clicked
+        void NotifyEditFocusLost(int idFrom, HWND hWndFrom) override;
 
     private:
         WinLib::TreeViewControl treeMiniViews;

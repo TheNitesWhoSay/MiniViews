@@ -1,5 +1,5 @@
 #include "RegistryTypes.h"
-#include <SimpleIcu.h>
+#include "../CrossCutLib/SimpleIcu.h"
 
 RegistryKey::RegistryKey(HKEY key, const std::string & subKey) : keyExists(false), key(key), subKey(subKey)
 {

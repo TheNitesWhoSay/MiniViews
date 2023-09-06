@@ -1,6 +1,7 @@
 #ifndef GENERALTAB_H
 #define GENERALTAB_H
 #include "../../WindowsLib/WindowsUi.h"
+#include "../Common.h"
 
 class GeneralWindow : public WinLib::ClassWindow
 {
@@ -13,8 +14,8 @@ class GeneralWindow : public WinLib::ClassWindow
     protected:
         void CreateSubWindows(int dpi, HFONT font);
         void EditModeCheckClicked();
-        virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
-        virtual void NotifyEditUpdated(int idFrom, HWND hWndFrom); // Sent when edit text changes, before redraw
+        void NotifyButtonClicked(int idFrom, HWND hWndFrom) override; // Sent when a button or checkbox is clicked
+        void NotifyEditUpdated(int idFrom, HWND hWndFrom) override; // Sent when edit text changes, before redraw
 
     private:
         WinLib::CheckBoxControl checkEditMode;

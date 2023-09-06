@@ -35,7 +35,7 @@ MiniView::MiniView(IMiniViewUser* user) : graphicsCaptureMirror(), hSource(NULL)
     lastUserSetCliWidth(0), lastUserSetCliHeight(0),
     //lastFixedCliWidth(0), lastFixedCliHeight(0),
     lastCliWidthFixedTo(0), lastCliHeightFixedTo(0),
-    clipped(false), internallyClipped(false), whiteBrush(NULL), blackBrush(NULL), user(user)
+    clipped(false), internallyClipped(false), user(user)
 {
     rcClip.left = 0;
     rcClip.top = 0;
@@ -45,28 +45,21 @@ MiniView::MiniView(IMiniViewUser* user) : graphicsCaptureMirror(), hSource(NULL)
     rcInternalClip.top = 0;
     rcInternalClip.right = 0;
     rcInternalClip.bottom = 0;
-    
-    whiteBrush = CreateSolidBrush(RGB(255, 255, 255));
-    blackBrush = CreateSolidBrush(RGB(0, 0, 0));
 }
 
 MiniView::~MiniView()
 {
-    if ( whiteBrush != NULL )
-        DeleteObject(whiteBrush);
 
-    if ( blackBrush != NULL )
-        DeleteObject(blackBrush);
 }
 
 bool MiniView::CreateThis(HWND hParent, HWND sourceHandle, int xc, int yc)
 {
     if ( MiniView::frozenIcon == NULL )
-        MiniView::frozenIcon = (HICON)LoadImage(GetModuleHandle(0), MAKEINTRESOURCE(IDI_FROZEN), IMAGE_ICON, 0, 0, LR_LOADTRANSPARENT);
+        MiniView::frozenIcon = WinLib::ResourceManager::getIcon(IDI_FROZEN, 0, 0, LR_LOADTRANSPARENT);
 
     hSource = sourceHandle;
-    HICON hIcon = (HICON)::LoadImage(::GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MINIVIEWSICON), IMAGE_ICON, 32, 32, 0);
-    HICON hIconSmall = (HICON)::LoadImage(::GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MINIVIEWSICON), IMAGE_ICON, 16, 16, 0);
+    auto hIcon = WinLib::ResourceManager::getIcon(IDI_MINIVIEWSICON, 32, 32);
+    auto hIconSmall = WinLib::ResourceManager::getIcon(IDI_MINIVIEWSICON, 16, 16);
     if ( ClassWindow::RegisterWindowClass(NULL, hIcon, NULL, NULL, NULL, "MiniViewWin", hIconSmall, false) )
     {
         ::GetClientRect(hSource, &rcClip);
@@ -476,10 +469,13 @@ void MiniView::MatchSource(bool matchPos, bool matchSize)
 
 void MiniView::PaintInstructions()
 {
-    HDC hDC = WindowsItem::StartBufferedPaint();
-    WindowsItem::FillPaintArea(whiteBrush);
-    DrawWrappableString(hDC, "Drop me onto a window!", 0, 0, PaintWidth(), PaintHeight());
-    WindowsItem::EndPaint();
+    RECT rcCli {};
+    WindowsItem::getClientRect(rcCli);
+    WinLib::DeviceContext dc { getHandle() };
+    dc.setBuffer(rcCli);
+    dc.fillRect(rcCli, RGB(255, 255, 255));
+    dc.drawWrappableText("Drop me onto a window!", rcCli);
+    dc.flushBuffer();
 }
 
 RECT getDpiScaledClip(const RECT & rcClip, LONG sourceDpi, LONG destDpi)
@@ -497,14 +493,23 @@ void MiniView::PaintMiniView()
     // If not GDI compatible, this method does nothing and graphicsCaptureMirror is responsible for graphic replication
     if ( this->isGdiCompatible ) 
     {
-        HDC sourceDc = ::GetDC(hSource);
-        HDC miniViewDc = internallyClipped || isFrozen ? WindowsItem::StartBufferedPaint() : WindowsItem::StartSimplePaint();
-        ::SetStretchBltMode(miniViewDc, COLORONCOLOR);
+        RECT rcCli {};
+        WindowsItem::getClientRect(rcCli);
+        auto paintWidth = rcCli.right-rcCli.left;
+        auto paintHeight = rcCli.bottom-rcCli.top;
+
+        WinLib::DeviceContext sourceDc { hSource };
+        WinLib::DeviceContext miniViewDc { getHandle() };
+        if ( internallyClipped || isFrozen )
+            miniViewDc.setBuffer(rcCli);
+
+        miniViewDc.setBkMode(0);
+        miniViewDc.setStretchBltMode(COLORONCOLOR);
 
         int xDest = internallyClipped ? rcInternalClip.left : 0,
             yDest = internallyClipped ? rcInternalClip.top : 0,
-            wDest = internallyClipped ? rcInternalClip.right - rcInternalClip.left : WindowsItem::PaintWidth(),
-            hDest = internallyClipped ? rcInternalClip.bottom - rcInternalClip.top : WindowsItem::PaintHeight();
+            wDest = internallyClipped ? rcInternalClip.right - rcInternalClip.left : paintWidth,
+            hDest = internallyClipped ? rcInternalClip.bottom - rcInternalClip.top : paintHeight;
 
         HWND hMiniView = WindowsItem::getHandle();
         LONG sourceDpi = LONG(GetDpiForWindow(hSource)),
@@ -517,12 +522,12 @@ void MiniView::PaintMiniView()
                 clipHeight = (rcDpiClip.bottom - rcDpiClip.top);
 
             if ( internallyClipped )
-                ClassWindow::FillPaintArea(GetSysColorBrush(COLOR_BACKGROUND));
+                miniViewDc.fillSysRect(rcCli, COLOR_BACKGROUND);
 
             if ( isFrozen && (user == nullptr || user->GetUseCachedImageWhenFrozen(*this)) && this->winGdiImageCache != nullptr )
                 this->winGdiImageCache->stretchBlt(miniViewDc, xDest, yDest, wDest, hDest, rcDpiClip.left, rcDpiClip.top, clipWidth, clipHeight, SRCCOPY);
             else
-                ::StretchBlt(miniViewDc, xDest, yDest, wDest, hDest, sourceDc, rcDpiClip.left, rcDpiClip.top, clipWidth, clipHeight, SRCCOPY);
+                sourceDc.stretchBlt(miniViewDc, xDest, yDest, wDest, hDest, rcDpiClip.left, rcDpiClip.top, clipWidth, clipHeight, SRCCOPY);
         }
         else // Not clipped
         {
@@ -534,19 +539,18 @@ void MiniView::PaintMiniView()
             RECT rcDest = {};
             ::GetClientRect(hMiniView, &rcDest);
             if ( internallyClipped )
-                ClassWindow::FillPaintArea(GetSysColorBrush(COLOR_BACKGROUND));
+                miniViewDc.fillSysRect(rcCli, COLOR_BACKGROUND);
 
             if (isFrozen && (user == nullptr || user->GetUseCachedImageWhenFrozen(*this)) && this->winGdiImageCache != nullptr)
                 this->winGdiImageCache->stretchBlt(miniViewDc, xDest, yDest, wDest, hDest, 0, 0, sourceWidth, sourceHeight, SRCCOPY);
             else
-                ::StretchBlt(miniViewDc, xDest, yDest, wDest, hDest, sourceDc, 0, 0, sourceWidth, sourceHeight, SRCCOPY);
+                sourceDc.stretchBlt(miniViewDc, xDest, yDest, wDest, hDest, 0, 0, sourceWidth, sourceHeight, SRCCOPY);
         }
 
         if ( isFrozen && (user == nullptr || user->GetShowFrozenIndicatorIcon(*this)) && MiniView::frozenIcon != NULL )
-            DrawIconEx(miniViewDc, wDest-32, 0, MiniView::frozenIcon, 0, 0, 0, NULL, DI_NORMAL);
+            miniViewDc.drawIconEx(wDest-32, 0, MiniView::frozenIcon, 0, 0, 0, NULL, DI_NORMAL);
 
-        WindowsItem::EndPaint();
-        ::ReleaseDC(hSource, sourceDc);
+        miniViewDc.flushBuffer();
     }
 }
 
@@ -959,9 +963,13 @@ void MiniView::OpenProperties()
 
 void MiniView::BlackoutMiniView()
 {
-    HDC hDC = WindowsItem::StartBufferedPaint();
-    WindowsItem::FillPaintArea(blackBrush);
-    WindowsItem::EndPaint();
+    RECT rcCli {};
+    WindowsItem::getClientRect(rcCli);
+
+    WinLib::DeviceContext dc { getHandle() };
+    dc.setBuffer(rcCli);
+    dc.fillRect(rcCli, RGB(0, 0, 0));
+    dc.flushBuffer();
 }
 
 int MiniView::EraseBackground()
@@ -1023,20 +1031,26 @@ void WinImage::setDimensions(LONG width, LONG height)
     this->height = height;
 }
 
-WinGdiImage::WinGdiImage(WinLib::WindowsItem & windowsItem) : WinImage(), hMemDc(NULL), bitmapInfo({}), bitmap(NULL)
+WinGdiImage::WinGdiImage(WinLib::WindowsItem & windowsItem) : WinImage(), dc(nullptr), bitmapInfo({})
 {
     auto width = windowsItem.cliWidth(),
          height = windowsItem.cliHeight();
 
     if ( width > 0 && height > 0 )
     {
-        HDC hdc = windowsItem.getDC();
-        if ( hdc != NULL )
-            SetImage(hdc, width, height);
+        RECT rcCli {};
+        windowsItem.getClientRect(rcCli);
+
+        dc = std::make_unique<WinLib::DeviceContext>(windowsItem.getHandle(), rcCli);
+        if ( *dc && dc->copySelfToBuffer() )
+        {
+            this->setDimensions(rcCli.right-rcCli.left, rcCli.bottom-rcCli.top);
+            this->SetBmi();
+        }
     }
 }
 
-WinGdiImage::WinGdiImage(HWND hSource) : WinImage(), hMemDc(NULL), bitmapInfo({}), bitmap(NULL)
+WinGdiImage::WinGdiImage(HWND hSource) : WinImage(), dc(nullptr), bitmapInfo({})
 {
     if ( hSource != NULL ) {
 
@@ -1047,20 +1061,19 @@ WinGdiImage::WinGdiImage(HWND hSource) : WinImage(), hMemDc(NULL), bitmapInfo({}
 
         if ( sourceWidth > 0 && sourceHeight > 0 )
         {
-            HDC hdc = ::GetDC(hSource);
-            if ( hdc != NULL )
-                SetImage(hdc, sourceWidth, sourceHeight);
+            dc = std::make_unique<WinLib::DeviceContext>(hSource, rcSource);
+            if ( *dc && dc->copySelfToBuffer() )
+            {
+                this->setDimensions(sourceWidth, sourceHeight);
+                this->SetBmi();
+            }
         }
     }
 }
 
 WinGdiImage::~WinGdiImage()
 {
-    if ( this->bitmap != NULL )
-        ::DeleteObject(bitmap);
 
-    if ( this->hMemDc != NULL )
-        ::DeleteDC(hMemDc);
 }
 
 bool WinGdiImage::isValid()
@@ -1071,33 +1084,17 @@ bool WinGdiImage::isValid()
     if ( width > 0 && height > 0 )
     {
         std::vector<uint32_t> pixels(size_t(width)*size_t(height), uint32_t(0));
-        return ::GetDIBits(hMemDc, bitmap, 0, height, &pixels[0], &bitmapInfo, DIB_RGB_COLORS) != 0
-            && !isAllZero(pixels);
+        auto linesRetrieved = dc->getDiBits(0, height, &pixels[0], &bitmapInfo);
+        return linesRetrieved == height && !isAllZero(pixels);
     }
     else
         return false;
 }
 
-void WinGdiImage::stretchBlt(HDC hdcDest, int xDest, int yDest, int wDest, int hDest,
-    int xSrc, int ySrc, int wSrc, int hSrc, DWORD rop)
+bool WinGdiImage::stretchBlt(const WinLib::DeviceContext & dest,
+    int xDest, int yDest, int wDest, int hDest, int xSrc, int ySrc, int wSrc, int hSrc, DWORD rop)
 {
-    ::StretchBlt(hdcDest, xDest, yDest, wDest, hDest, hMemDc, xSrc, ySrc, wSrc, hSrc, rop);
-}
-
-void WinGdiImage::SetImage(HDC sourceDc, LONG width, LONG height)
-{
-    this->setDimensions(width, height);
-    this->hMemDc = ::CreateCompatibleDC(sourceDc);
-    if ( hMemDc != NULL )
-    {
-        this->SetBmi();
-        this->bitmap = ::CreateCompatibleBitmap(sourceDc, width, height);
-        if ( this->bitmap != NULL )
-        {
-            if ( SelectObject(this->hMemDc, this->bitmap) != NULL )
-                ::BitBlt(hMemDc, 0, 0, width, height, sourceDc, 0, 0, SRCCOPY);
-        }
-    }
+    return dc->stretchBlt(dest, xDest, yDest, wDest, hDest, xSrc, ySrc, wSrc, hSrc, rop);
 }
 
 void WinGdiImage::SetBmi()
@@ -1117,51 +1114,5 @@ void WinGdiImage::SetBmi()
         bmiH.biCompression = BI_RGB;
         bmiH.biXPelsPerMeter = 1;
         bmiH.biYPelsPerMeter = 1;
-    }
-}
-
-void DrawWrappableString(HDC hDC, const std::string & utf8Str, int startX, int startY, int cliWidth, int cliHeight)
-{
-    icux::uistring str = icux::toUistring(utf8Str);
-
-    SIZE strSize = {};
-    RECT nullRect = {};
-    ::GetTextExtentPoint32(hDC, &str[0], (int)str.size(), &strSize);
-    s32 lineHeight = strSize.cy;
-
-    if ( strSize.cx < cliWidth )
-        ::ExtTextOut(hDC, startX, startY, ETO_OPAQUE, &nullRect, &str[0], (UINT)str.length(), 0);
-    else if ( cliHeight > lineHeight ) // Can word wrap
-    {
-        size_t lastCharPos = str.size() - 1;
-        s32 prevBottom = startY;
-
-        while ( (startY+cliHeight) - prevBottom > lineHeight && str.size() > 0 )
-        {
-            // Binary search for the character length of this line
-            size_t floor = 0;
-            size_t ceil = str.size();
-            while ( ceil - 1 > floor )
-            {
-                lastCharPos = (ceil - floor) / 2 + floor;
-                ::GetTextExtentPoint32(hDC, &str[0], (int)lastCharPos, &strSize);
-                if ( strSize.cx > cliWidth )
-                    ceil = lastCharPos;
-                else
-                    floor = lastCharPos;
-            }
-            ::GetTextExtentPoint32(hDC, &str[0], (int)floor + 1, &strSize); // Correct last character if needed
-            if ( strSize.cx > cliWidth )
-                lastCharPos = floor;
-            else
-                lastCharPos = ceil;
-            // End binary search
-
-            ::ExtTextOut(hDC, startX, prevBottom, ETO_OPAQUE, &nullRect, &str[0], (UINT)lastCharPos, 0);
-            //while ( str[lastCharPos] == ' ' || str[lastCharPos] == '\t' )
-            //    lastCharPos++;
-            str = str.substr(lastCharPos, str.size());
-            prevBottom += lineHeight;
-        }
     }
 }

@@ -20,9 +20,6 @@ class ClipSel : public WinLib::ClassWindow
 
     private:
         LONG startX, startY;
-        HBRUSH hOutline;
-        HBRUSH backgroundBrush;
-        HCURSOR regionSelectCursor;
         MiniView* miniView;
         RECT rcClip;
 };
