@@ -1,5 +1,6 @@
 #include "ListViewControl.h"
 #include <SimpleIcu.h>
+#include <CommCtrl.h>
 #include <iostream>
 
 namespace WinLib {

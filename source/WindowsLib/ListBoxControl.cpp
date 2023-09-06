@@ -1,5 +1,6 @@
 #include "ListBoxControl.h"
 #include <SimpleIcu.h>
+#include <CommCtrl.h>
 #include <iostream>
 
 namespace WinLib {
@@ -188,7 +189,7 @@ namespace WinLib {
             return 0;
     }
 
-    bool ListBoxControl::GetSelString(int index, output_param std::string & str)
+    bool ListBoxControl::GetSelString(int index, std::string & str)
     {
         LRESULT numSel = SendMessage(getHandle(), LB_GETSELCOUNT, 0, 0);
         if ( numSel != LB_ERR && numSel > 0 )
@@ -219,7 +220,7 @@ namespace WinLib {
         return false;
     }
 
-    bool ListBoxControl::GetCurSelString(output_param std::string & str)
+    bool ListBoxControl::GetCurSelString(std::string & str)
     {
         int selectedItem = -1;
         if ( GetCurSel(selectedItem) )
@@ -240,6 +241,17 @@ namespace WinLib {
         return false;
     }
 
+    bool ListBoxControl::GetCurSelItem(int & itemData)
+    {
+        int selectedItem = -1;
+        if ( GetCurSel(selectedItem) )
+        {
+            itemData = int(SendMessage(getHandle(), LB_GETITEMDATA, WPARAM(selectedItem), NULL));
+            return true;
+        }
+        return false;
+    }
+
     bool ListBoxControl::GetSelItem(int index, int & itemData)
     {
         LRESULT numSel = SendMessage(getHandle(), LB_GETSELCOUNT, 0, 0);
@@ -248,18 +260,15 @@ namespace WinLib {
             if ( index < numSel ) // Index must be within the amount of items selected
             {
                 int arraySize = index+1;
-                int* selections = nullptr;
-                try { selections = new int[arraySize]; } // Need space for this index and all items before
-                catch ( std::bad_alloc ) { return false; }
-                LRESULT result = SendMessage(getHandle(), LB_GETSELITEMS, (WPARAM)arraySize, (LPARAM)selections);
+                std::unique_ptr<int[]> selections = nullptr;
+                try { selections = std::make_unique<int[]>(arraySize); } // Need space for this index and all items before
+                catch ( ... ) { return false; }
+                LRESULT result = SendMessage(getHandle(), LB_GETSELITEMS, (WPARAM)arraySize, (LPARAM)selections.get());
                 if ( result != LB_ERR )
                 {
                     itemData = int(SendMessage(getHandle(), LB_GETITEMDATA, selections[index], 0));
-                    delete[] selections;
                     return true;
                 }
-                else
-                    delete[] selections;
             }
         }
         return false;
@@ -292,7 +301,7 @@ namespace WinLib {
                     try {
                         itemsToAdd.push((u32)lParam);
                         return itemsToAdd.size()-1;
-                    } catch ( std::exception ) { return -1; }
+                    } catch ( ... ) { return -1; }
                 }
                 break;
             case WM_SETREDRAW:

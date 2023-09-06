@@ -12,25 +12,23 @@ enum class Id : int
     MainDialogTabs
 };
 
-MainDialog::MainDialog() : dpi(DefaultDpi), windowLeft(0), windowTop(0), selectedTab(TabId::GeneralTab), defaultFont(NULL), smallIcon(NULL),
-    mediumIcon(NULL)
+MainDialog::MainDialog() : dpi(DefaultDpi), windowLeft(0), windowTop(0), selectedTab(TabId::GeneralTab), defaultFont(NULL)
 {
-    defaultFont = ::CreateFont(14, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, icux::toUistring("Microsoft Sans Serif").c_str());
-    smallIcon = (HICON)::LoadImage(::GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MINIVIEWSICON), IMAGE_ICON, 16, 16, 0);
-    mediumIcon = (HICON)::LoadImage(::GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MINIVIEWSICON), IMAGE_ICON, 32, 32, 0);
+    this->dpi = GetDpiForSystem();
+    defaultFont = WinLib::ResourceManager::getFont(DpiScale(5, dpi), DpiScale(14, dpi), "Microsoft Sans Serif");
 }
 
 MainDialog::~MainDialog()
 {
-    ::DeleteObject(defaultFont);
-    ::DestroyIcon(smallIcon);
-    ::DestroyIcon(mediumIcon);
+
 }
 
 bool MainDialog::CreateThis(HWND hParent)
 {
     this->dpi = hParent != NULL ? GetDpiForWindow(hParent) : GetDpiForSystem();
-    defaultFont = ::CreateFont(DpiScale(14, dpi), DpiScale(5, dpi), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, icux::toUistring("Microsoft Sans Serif").c_str());
+    defaultFont = WinLib::ResourceManager::getFont(DpiScale(5, dpi), DpiScale(14, dpi), "Microsoft Sans Serif");
+    auto smallIcon = WinLib::ResourceManager::getIcon(IDI_MINIVIEWSICON, 16, 16);
+    auto mediumIcon = WinLib::ResourceManager::getIcon(IDI_MINIVIEWSICON, 32, 32);
     if ( ClassWindow::RegisterWindowClass(NULL, mediumIcon, NULL, GetSysColorBrush(COLOR_WINDOW), NULL, "MainMiniViewsDialog", smallIcon, false) &&
          ClassWindow::CreateClassWindow(WS_EX_APPWINDOW, MiniViews::mainWindowName.c_str(), WS_SYSMENU|WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT,
              DpiScale(279, dpi), DpiScale(464, dpi), hParent, NULL) )
@@ -125,8 +123,8 @@ void MainDialog::ProcessClose()
 
 void MainDialog::CreateSubWindows(int dpi)
 {
-    WindowsItem::SetSmallIcon(smallIcon);
-    WindowsItem::SetMedIcon(mediumIcon);
+    WindowsItem::SetSmallIcon(WinLib::ResourceManager::getIcon(IDI_MINIVIEWSICON, 16, 16));
+    WindowsItem::SetMedIcon(WinLib::ResourceManager::getIcon(IDI_MINIVIEWSICON, 32, 32));
     //MoveTo(windowLeft, windowTop);
 
     tabs.CreateThis(getHandle(), 0, 0, DpiScale(263, dpi), DpiScale(426, dpi), (u32)Id::MainDialogTabs);
@@ -148,7 +146,7 @@ void MainDialog::CreateSubWindows(int dpi)
         case TabId::AdvancedTab: advancedWindow.Show(); break;
         case TabId::AboutTab: aboutWindow.Show(); break;
     }
-    WindowsItem::ReplaceChildFonts(defaultFont);
+    WindowsItem::replaceChildFonts(defaultFont);
     FixPositions(dpi);
 }
 

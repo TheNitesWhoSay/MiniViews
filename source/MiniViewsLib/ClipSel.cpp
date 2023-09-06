@@ -1,22 +1,18 @@
 #include "ClipSel.h"
 #include "MiniViews.h"
+#include <Windowsx.h>
 
-ClipSel::ClipSel() : startX(0), startY(0), hOutline(NULL), backgroundBrush(NULL), regionSelectCursor(NULL), miniView(nullptr)
+ClipSel::ClipSel() : startX(0), startY(0), miniView(nullptr)
 {
     rcClip.left = 0;
     rcClip.top = 0;
     rcClip.right = 0;
     rcClip.bottom = 0;
-    hOutline = ::CreateSolidBrush(RGB(190, 200, 255));
-    backgroundBrush = ::CreateSolidBrush(RGB(255, 255, 255));
-    regionSelectCursor = ::LoadCursor(NULL, IDC_CROSS);
 }
 
 ClipSel::~ClipSel()
 {
-    ::DeleteObject(hOutline);
-    ::DeleteObject(backgroundBrush);
-    ::DestroyCursor(regionSelectCursor);
+
 }
 
 bool ClipSel::CreateThis(HWND hParent, MiniView &miniViewToClip)
@@ -30,7 +26,8 @@ bool ClipSel::CreateThis(HWND hParent, MiniView &miniViewToClip)
     cliTopLeft.y = rcSourceCli.top;
     ::ClientToScreen(miniView->GetSourceWindow(), &cliTopLeft);
 
-    if ( ClassWindow::RegisterWindowClass(NULL, NULL, regionSelectCursor, backgroundBrush, NULL, "ClipSelWindow", NULL, false) &&
+    if ( ClassWindow::RegisterWindowClass(NULL, NULL, WinLib::ResourceManager::getCursor(IDC_CROSS),
+            WinLib::ResourceManager::getSolidBrush(RGB(255, 255, 255)), NULL, "ClipSelWindow", NULL, false) &&
          ClassWindow::CreateClassWindow(NULL, "Select Clip", WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
              cliTopLeft.x, cliTopLeft.y, rcSourceCli.right - rcSourceCli.left, rcSourceCli.bottom - rcSourceCli.top, hParent, NULL) )
     {
@@ -91,10 +88,12 @@ void ClipSel::LButtonUp(int xc, int yc)
 
 void ClipSel::Paint()
 {
-    WindowsItem::StartBufferedPaint();
-    WindowsItem::FillPaintArea(backgroundBrush);
-    WindowsItem::FrameRect(hOutline, rcClip);
-    WindowsItem::EndPaint();
+    RECT rcCli {};
+    WindowsItem::getClientRect(rcCli);
+    WinLib::DeviceContext dc { getHandle(), rcCli };
+    dc.fillRect(rcCli, RGB(255, 255, 255));
+    dc.frameRect(rcClip, RGB(190, 200, 255));
+    dc.flushBuffer();
 }
 
 LRESULT ClipSel::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)

@@ -1,6 +1,7 @@
 #ifndef GRIDITEM_H
 #define GRIDITEM_H
 #include "DataTypes.h"
+#include <string>
 
 namespace WinLib {
 
@@ -16,7 +17,7 @@ namespace WinLib {
             void SetDisabled(bool disabled);
             void Clear();
 
-            bool getText(output_param std::string & text);
+            bool getText(std::string & text);
             size_t getTextLength();
             int getTextNum();
             u32 getData();

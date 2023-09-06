@@ -2,6 +2,7 @@
 #define MINIVIEW_H
 #include "../WindowsLib/WindowsUi.h"
 #include "WinrtGraphicsCapture.h"
+#include "Common.h"
 
 class MiniView;
 
@@ -31,16 +32,13 @@ public:
     virtual ~WinGdiImage();
 
     bool isValid() override;
-    void stretchBlt(HDC hdcDest, int xDest, int yDest, int wDest, int hDest,
-        int xSrc, int ySrc, int wSrc, int hSrc, DWORD rop);
+    bool stretchBlt(const WinLib::DeviceContext & dest, int xDest, int yDest, int wDest, int hDest, int xSrc, int ySrc, int wSrc, int hSrc, DWORD rop);
 
 private:
-    void SetImage(HDC sourceDc, LONG width, LONG height);
     void SetBmi();
 
-    HDC hMemDc;
+    std::unique_ptr<WinLib::DeviceContext> dc;
     BITMAPINFO bitmapInfo;
-    HBITMAP bitmap;
 
     WinGdiImage() = delete;
 };
@@ -160,8 +158,6 @@ class MiniView : public WinLib::ClassWindow
         RECT rcClip; // The dimensions the MiniView is viewing/clipping dimensions
         bool internallyClipped; // Whether this mini-window is only drawing to a portion of itself
         RECT rcInternalClip; // The internal area of a mini-view to which the source window is being copied
-        HBRUSH whiteBrush;
-        HBRUSH blackBrush;
         IMiniViewUser* user;
         std::unique_ptr<WinGdiImage> winGdiImageCache;
         SIZE sourceSize;
@@ -182,7 +178,5 @@ public:
 private:
     WindowsCaptureImage() = delete;
 };
-
-void DrawWrappableString(HDC hDC, const std::string & str, int startX, int startY, int cliWidth, int cliHeight);
 
 #endif

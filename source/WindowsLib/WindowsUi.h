@@ -18,6 +18,7 @@
 #include "ListBoxControl.h"
 #include "ListViewControl.h"
 #include "RadioButtonControl.h"
+#include "RichEditControl.h"
 #include "StatusControl.h"
 #include "TabControl.h"
 #include "TextControl.h"
@@ -35,8 +36,9 @@
 #include "MdiClient.h"
 
 // Misc
-#include "Painting.h"
 #include "Popup.h"
 #include "FileSystem.h"
+#include "DeviceContext.h"
+#include "ResourceManager.h"
 
 #endif

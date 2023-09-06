@@ -2,6 +2,7 @@
 #include "Preferences.h"
 #include "Resource.h"
 #include "Version.h"
+#include "../WindowsLib/WindowsUi.h"
 
 enum class Msg : UINT
 {
@@ -39,22 +40,16 @@ const std::string MiniViews::mainClassName("wcMiniViews");
 const std::string MiniViews::mainWindowName(std::string("Mini Views ") + GetShortVersionString());
 
 MiniViews::MiniViews() : prefs(RegistryKey(HKEY_CURRENT_USER, "SOFTWARE\\Mini Views")),
-    defaultCursor(NULL), smallIcon(NULL), mediumIcon(NULL), transparentColor(RGB(255, 178, 255)),
-    transparentBrush(NULL), transparencyAlpha(175), editMode(true), hasAutoDisplayedPage(false),
+    transparentColor(RGB(255, 178, 255)), transparencyAlpha(175), editMode(true), hasAutoDisplayedPage(false),
     frameNumber(0), hasFrameToRun(false), updater(*this)
 {
     transparencyAlpha = (u8)prefs.DefaultOpacity.Get();
-    defaultCursor = ::LoadCursor(NULL, IDC_ARROW);
-    transparentBrush = ::CreateSolidBrush(transparentColor);
-    smallIcon = (HICON)::LoadImage(::GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MINIVIEWSICON), IMAGE_ICON, 16, 16, 0);
-    mediumIcon = (HICON)::LoadImage(::GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MINIVIEWSICON), IMAGE_ICON, 32, 32, 0);
+    transparentBrush = WinLib::ResourceManager::getSolidBrush(transparentColor);
 }
 
 MiniViews::~MiniViews()
 {
-    ::DestroyCursor(defaultCursor);
-    ::DestroyIcon(smallIcon);
-    ::DestroyIcon(mediumIcon);
+
 }
 
 int MiniViews::Run(int showCommand)
@@ -338,7 +333,8 @@ bool MiniViews::CreateNotificationIcon()
 {
     if ( HasNotificationIcon() )
         return true;
-
+    
+    auto smallIcon = WinLib::ResourceManager::getIcon(IDI_MINIVIEWSICON, 16, 16);
     NOTIFYICONDATA notifyIconData = {};
     notifyIconData.cbSize = sizeof(NOTIFYICONDATA);
     notifyIconData.hWnd = getHandle();
@@ -366,6 +362,10 @@ void MiniViews::RemoveNotificationIcon()
 
 bool MiniViews::CreateThis()
 {
+    auto defaultCursor = WinLib::ResourceManager::getCursor(IDC_ARROW);
+    auto smallIcon = WinLib::ResourceManager::getIcon(IDI_MINIVIEWSICON, 16, 16);
+    auto mediumIcon = WinLib::ResourceManager::getIcon(IDI_MINIVIEWSICON, 32, 32);
+
     if ( ClassWindow::RegisterWindowClass(NULL, mediumIcon, defaultCursor, transparentBrush, NULL, mainClassName.c_str(),
                                           smallIcon, false) &&
          ClassWindow::CreateClassWindow(WS_EX_TOPMOST|WS_EX_TOOLWINDOW, mainWindowName.c_str(), NULL, CW_USEDEFAULT, CW_USEDEFAULT,
