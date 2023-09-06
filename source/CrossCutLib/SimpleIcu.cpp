@@ -1,6 +1,8 @@
 #include "SimpleIcu.h"
-#include "unicode/unistr.h"
-#include "unicode/ustring.h"
+#include <cstdint>
+#include <memory>
+#include <unicode/unistr.h>
+#include <unicode/ustring.h>
 
 namespace icux {
     
@@ -10,7 +12,7 @@ namespace icux {
         int32_t resultSize = 0;
         UErrorCode errorCode = UErrorCode::U_ZERO_ERROR;
         const UChar* src = (const UChar*)utf16Str;
-        std::unique_ptr<char> buffer(new char[bufferSize]);
+        std::unique_ptr<char[]> buffer(new char[bufferSize]);
         u_strToUTF8(buffer.get(), bufferSize, &resultSize, src, (int32_t)length, &errorCode);
         return std::string(buffer.get(), (size_t)resultSize);
     }
@@ -104,6 +106,18 @@ namespace icux {
             return uistring(utf8Str);
         #endif
     }
+
+#ifdef UTF8_UI
+    uistring toUistring(const wchar_t* utf16Str, size_t length)
+    {
+        return toUtf8(utf16Str, length);
+    }
+
+    uistring toUistring(const std::wstring & utf16Str)
+    {
+        return toUtf8(utf16Str);
+    }
+#endif
 
 #ifdef UTF16_UI
     uistring toUistring(const filestring & filestring)

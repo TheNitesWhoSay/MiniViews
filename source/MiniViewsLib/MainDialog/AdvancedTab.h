@@ -1,6 +1,7 @@
 #ifndef ADVANCEDTAB_H
 #define ADVANCEDTAB_H
 #include "../../WindowsLib/WindowsUi.h"
+#include "../Common.h"
 
 class AdvancedWindow : public WinLib::ClassWindow
 {
@@ -14,8 +15,8 @@ class AdvancedWindow : public WinLib::ClassWindow
 
     protected:
         void CreateSubWindows(int dpi, HFONT font);
-        virtual void NotifyButtonClicked(int idFrom, HWND hWndFrom); // Sent when a button or checkbox is clicked
-        virtual void NotifyEditUpdated(int idFrom, HWND hWndFrom); // Sent when edit text changes, before redraw
+        void NotifyButtonClicked(int idFrom, HWND hWndFrom) override; // Sent when a button or checkbox is clicked
+        void NotifyEditUpdated(int idFrom, HWND hWndFrom) override; // Sent when edit text changes, before redraw
 
     private:
         bool blockEditNotify;

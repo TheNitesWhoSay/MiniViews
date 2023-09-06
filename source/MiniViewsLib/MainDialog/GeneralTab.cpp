@@ -59,7 +59,7 @@ void GeneralWindow::FixPositions(int dpi, HFONT font)
 
 void GeneralWindow::CreateSubWindows(int dpi, HFONT font)
 {
-    WindowsItem::SetFont(font, false);
+    WindowsItem::setFont(font, false);
     int padding = DpiScale(5, dpi);
     bool editMode = miniViews.IsInEditMode();
     checkEditMode.CreateThis(getHandle(), 0, DpiScale(5, dpi), DpiScale(100, dpi), DpiScale(23, dpi), editMode, "Edit Mode", (u32)Id::CheckEditMode);
