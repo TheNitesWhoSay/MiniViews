@@ -805,7 +805,7 @@ bool MiniView::PreferGraphicsCapture(HWND hWnd)
 {
     if ( auto windowText = getWindowText(hWnd) )
     {
-        if ( windowText->ends_with("Mozilla Firefox") != std::string::npos )
+        if ( windowText->ends_with("Mozilla Firefox") )
             return true;
     }
     return false;
