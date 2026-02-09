@@ -1,9 +1,13 @@
 # MiniViews
 An application providing small, transparent views of windows in the backround
 
-Demonstration Video:
+
+[Download Latest](https://github.com/TheNitesWhoSay/MiniViews/releases/latest)
+
+## Demonstration
 
 [![Demonstration Video](http://img.youtube.com/vi/bkwBFb_JDBQ/0.jpg)](http://www.youtube.com/watch?v=bkwBFb_JDBQ)
+
 
 ## General Operations
 - **Add a Mini View** to the screen by using the hotkey (Ctrl Shift A), the button in the General Tab, or from the notification icon's menu. Once added a Mini View can be dragged and dropped (either by the title bar or the client area) onto the window you wish to keep a persistent view of.
