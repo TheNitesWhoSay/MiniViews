@@ -5,4 +5,6 @@
 
 bool isAllZero(const std::vector<uint32_t> & vec);
 
+bool isAllSame(const std::vector<uint32_t> & vec);
+
 #endif
