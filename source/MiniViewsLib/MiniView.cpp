@@ -1085,7 +1085,7 @@ bool WinGdiImage::isValid()
     {
         std::vector<uint32_t> pixels(size_t(width)*size_t(height), uint32_t(0));
         auto linesRetrieved = dc->getDiBits(0, height, &pixels[0], &bitmapInfo);
-        return linesRetrieved == height && !isAllZero(pixels);
+        return linesRetrieved == height && !isAllSame(pixels);
     }
     else
         return false;
