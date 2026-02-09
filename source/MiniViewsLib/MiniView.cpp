@@ -801,6 +801,16 @@ std::optional<std::string> getWindowText(HWND hWindow)
     return {};
 }
 
+bool MiniView::PreferGraphicsCapture(HWND hWnd)
+{
+    if ( auto windowText = getWindowText(hWnd) )
+    {
+        if ( windowText->ends_with("Mozilla Firefox") != std::string::npos )
+            return true;
+    }
+    return false;
+}
+
 void MiniView::ExitSizeMove()
 {
     if ( this->settingWindow ) // Blank MiniView dropped
@@ -812,7 +822,8 @@ void MiniView::ExitSizeMove()
             HWND newHandle = ::WindowFromPhysicalPoint(pt);
         
             WinGdiImage winGdiImage(newHandle);
-            if ( winGdiImage.isValid() )
+            bool useGraphicsCapture = PreferGraphicsCapture(newHandle);
+            if ( !useGraphicsCapture && winGdiImage.isValid() )
             {
                 this->isGdiCompatible = true;
                 this->isGraphicsCaptureCompatible = false;
