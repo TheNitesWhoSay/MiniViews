@@ -117,6 +117,7 @@ class MiniView : public WinLib::ClassWindow
         void SizeFinished();
         void WindowMoved();
         void SetMinMaxSize(MINMAXINFO &minMaxInfo);
+        bool PreferGraphicsCapture(HWND newHandle);
         void ExitSizeMove();
         bool IsSourceOnTop();
         void CheckHideBySourceOnTop();
